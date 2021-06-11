@@ -1,0 +1,22 @@
+# Filter out folders (for debugging by myself / ide)
+cmake-build-debug
+cmake-build-release
+.idea
+
+# Filter out folders Large file
+VideoAndBinFile
+
+# Compiled XeLaTex Temporary files
+*.aux
+*.log
+*.out
+*.pdf
+*.synctex.gz
+*.toc
+*.lod
+*.bbl
+*.blg
+*.idx
+*.dvi
+
+

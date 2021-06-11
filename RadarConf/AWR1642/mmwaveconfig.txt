@@ -1,0 +1,152 @@
+#
+#For detailed view of mmWave Radar configuration structure
+#please refer 
+#ti\control\mmwavelink\docs\doxygen\html\index.html
+#
+
+#
+#cascade mode enable
+#
+cascade_enable=0;
+#END
+
+#
+#power on master arguments, please modify if needed.
+#rlClientCbs_t: crcType 0:16Bit/1:32Bit/2:64Bit, ackTimeout
+#
+crcType=0;
+ackTimeout=1000;
+arDevType=2;
+#END
+
+#
+#channel config parameters, please modify if needed.
+#rlChanCfg_t
+#
+channelTx=1;
+channelRx=15;
+cascading=0;
+#END
+
+#
+#ADC out config parameters, please modify if needed.
+#rlAdcOutCfg_t
+#
+adcBits=2;
+adcFormat=1;
+#END
+
+#
+#DATA format config parameters, please modify if needed.
+#rlDevDataFmtCfg_t
+#
+rxChanEn=15;
+adcBitsD=2;
+adcFmt=1;
+iqSwapSel=0;
+chInterleave=1;
+#END
+
+#
+#Low power config Paramters, please modify if needed.
+#rlLowPowerModeCfg_t
+#
+anaCfg=0;
+lpAdcMode=1;
+#END
+
+#
+#Data Path config parameters, please modify if needed
+#rlDevDataPathCfg_t
+#
+intfSel=1;
+transferFmtPkt0=1;
+transferFmtPkt1=0;
+cqConfig=2;
+cq0TransSize=64;
+cq1TransSize=64;
+cq2TransSize=64;
+#END
+
+#
+#LVDS clock config parameters, please modify if needed
+#rlDevDataPathClkCfg_t
+#
+laneClk=1;
+dataRate=1;
+#END
+
+#
+#SET HSI clock parameters, please modify if needed.
+#rlDevHsiClk_t
+#
+hsiClk=9
+#END
+
+#
+#LANE config parameters, please modify if needed.
+#rlDevLaneEnable_t
+#
+laneEn=3;
+#END
+
+#
+#LVDS Lane Config parameters, please modify if needed.
+#rlDevLvdsLaneCfg_t
+#
+laneFmtMap=0;
+laneParamCfg=1;
+#END
+
+#
+#Profile config parameters, please modify if needed.
+#rlProfileCfg_t
+#
+profileId=0;
+startFreqConst=1435388860;
+idleTimeConst=20000; 
+adcStartTimeConst=100;
+rampEndTime=5800;
+txOutPowerBackoffCode=0;
+txPhaseShifter=0;
+freqSlopeConst=1267;
+txStartTime=700;
+numAdcSamples=256;
+digOutSampleRate=5500;
+hpfCornerFreq1=0;
+hpfCornerFreq2=0;
+txCalibEnCfg=511;
+rxGain=48;
+#END
+
+#
+#Chirp Configuration parameters, please modify if needed.
+#rlChirpCfg_t
+#
+chirpStartIdx=0;
+chirpEndIdx=0;
+profileIdCPCFG=0;
+startFreqVar=0;
+freqSlopeVar=0;
+idleTimeVar=0;
+adcStartTimeVar=0;
+txEnable=1;
+#END
+
+#
+#Frame configuration parameters, please modify if needed.
+#rlFrameCfg_t
+#
+chirpStartIdxFCF=0;
+chirpEndIdxFCF=0;
+frameCount=0;
+loopCount=128;
+periodicity=8000000; 
+triggerDelay=0;
+numAdcSamples=512;
+triggerSelect=1;
+#END
+
+
+
+
