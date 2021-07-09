@@ -1066,7 +1066,118 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
     // 输出消息重定位
     wxLog::SetActiveTarget(m_console);
 
-    wxLogMessage(_("In development !"));
+    // 获取文件路径
+    // todo - 做一个wxdialog
+    std::string binFileNameStr = "a9p3r7.bin";  //todo
+
+    // 雷达信号处理类相关变量初始设置
+    RadarParam *radarParam = new RadarParam;                          // RadarParam对象初始化
+    RadarDataCube *radarCube = new RadarDataCube(*radarParam);     // RadarDataCube对象初始化
+    int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];   // 初始化buff
+    std::vector<INT16>::iterator insertPos;                           // 设置初始复制位置
+    insertPos = radarCube->getFrame().begin();                        // 定义插入帧数据中的位置初始化
+
+    // 获取帧数 - totalFrame
+    std::ifstream ifsCountFrame(binFileNameStr,std::ios::binary | std::ios::in);
+    if(!ifsCountFrame.is_open()) return;
+    ifsCountFrame.seekg(0, std::ios_base::end);
+    long long nFileLen = ifsCountFrame.tellg();
+    long long totalFrame = nFileLen / radarParam->getFrameBytes();
+    ifsCountFrame.close();
+
+    // 打开文件
+    std::ifstream ifs(binFileNameStr,std::ios::binary | std::ios::in);
+    if(!ifs.is_open()) return;
+
+    bool m_mdMapDrawFlag = true;
+
+    int frameCount = totalFrame;
+    // 执行读取的文件
+    while (frameCount--)
+    {
+        ifs.read((char *) preBuf, radarParam->getFrameBytes());
+        std::copy_n(preBuf, radarParam->getFrameBytes() / 2, insertPos);
+
+        // 雷达数据处理
+        // 帧数据流存满 - 进行相应处理
+        radarCube->creatCube();
+        radarCube->creatRdm();
+
+        // 微多普勒图也进行更新
+        if (m_mdMapDrawFlag) {
+            radarCube->setFlagForMap();
+            m_mdMapDrawFlag = false;
+        }
+
+        radarCube->updateStaticMicroMap(totalFrame);
+    }
+
+    // 所有处理结束后，会生成完整的微多普勒频谱，提取特征
+    std::vector<arma::rowvec> featureVec = radarCube->extractFeature();
+
+#ifndef NDEBUG
+    // cv::imshow("aa",radarCube->convertMdToStaticMap(totalFrame));
+    // cv::waitKey(0);
+#endif
+
+    int RdCols = radarCube->convertMdToStaticMap(totalFrame).cols, RdRows = radarCube->convertMdToStaticMap(totalFrame).rows;
+    // 使用malloc分配一块动态内存 - 目的在于独立出这块图的数据
+    void *RdData = malloc(3 * RdCols * RdRows);
+    memcpy(RdData, (void *) radarCube->convertMdToStaticMap(totalFrame).data, 3 * RdCols * RdRows);
+    wxImage *RdImage = new wxImage(RdCols, RdRows, (uchar *) RdData, false);
+
+
+    m_mdPic->SetBitmap(*RdImage,0,0,128,150);
+
+
+    m_mdWin->UpdateAll();m_mdWin->Fit();
+
+
+
+#ifndef NDEBUG
+    featureVec[0].print();
+    std::cout << "-------------------------" << std::endl;
+    featureVec[1].print();
+    std::cout << "-------------------------" << std::endl;
+    featureVec[2].print();
+    std::cout << "-------------------------" << std::endl;
+#endif
+
+    // 进行绘制 - 设置三个特征矢量的y坐标
+    std::vector<double> vecCur1y, vecCur2y, vecCur3y;
+    arma::rowvec::iterator mIt = featureVec[0].begin();
+    arma::rowvec::iterator mIt_end = featureVec[0].end();
+    for (; mIt != mIt_end; mIt++) vecCur1y.push_back(*mIt);
+    mIt = featureVec[1].begin();
+    mIt_end = featureVec[1].end();
+    for (; mIt != mIt_end; mIt++) vecCur2y.push_back(*mIt);
+    mIt = featureVec[2].begin();
+    mIt_end = featureVec[2].end();
+    for (; mIt != mIt_end; mIt++) vecCur3y.push_back(*mIt);
+    // 进行绘制 - 设置三个特征矢量的x坐标
+    std::vector<double> vecCur1x, vecCur2x, vecCur3x;
+    double timeRes = 0.03;
+    for (int p = 0;p < vecCur1y.size();++p) vecCur1x.push_back(p*timeRes);
+    for (int p = 0;p < vecCur2y.size();++p) vecCur2x.push_back(p*timeRes);
+    for (int p = 0;p < vecCur3y.size();++p) vecCur3x.push_back(p);
+
+    m_torsoCurve->SetData(vecCur1x,vecCur1y);m_torsoCurve->SetContinuity(true);
+    m_limbsCurve->SetData(vecCur2x,vecCur2y);m_limbsCurve->SetContinuity(true);
+    m_vmdCurve->SetData(vecCur3x,vecCur3y);m_vmdCurve->SetContinuity(true);
+
+    m_torsoWin->Update();m_torsoWin->Fit();
+    m_limbsWin->Update();m_limbsWin->Fit();
+    m_vmdWin->Update();m_vmdWin->Fit();
+
+
+
+    // 关闭文件 + 释放内存
+    // 关闭文件
+    ifs.close();
+    // 释放内存
+    delete[] preBuf;
+    delete radarParam;
+    delete radarCube;
 }
 
 

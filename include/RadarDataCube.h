@@ -49,11 +49,18 @@ public:
     cv::Mat& convertRdmToMap();      ///< 转换成Mat图
     cv::Mat& convertMdToMap();       ///< 转换成微多普勒图
 
-private:
+    std::vector<arma::rowvec> extractFeature();   ///< 从微多普勒图中抽取向量
+    arma::vec readVelocity();        // todo - 读取速度
+    void updateStaticMicroMap(long long frameCount);
+    cv::Mat& convertMdToStaticMap(long long frameCount);
+
+
+
+protected:
     arma::vec creatHanningCol(int length);    ///< 创建hanning窗 - 纵向
     arma::rowvec creatHanningRow(int length); ///< 创建hanning窗 - 横向
 
-private:
+protected:
     RadarParam m_param;                     ///< 雷达参数
     std::vector<int16_t> m_singleFrame;     ///< 单帧数据流
     arma::cx_cube m_radarCube;              ///< 雷达数据立方体
@@ -66,5 +73,26 @@ private:
     double m_globalMin;                     ///< 自适应图像参数 - 前N帧最小值
     double m_globalMax;                     ///< 自适应图像参数 - 前N帧最大值
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #endif //REALTIMECOMMUNICATION_RADARDATACUBE_H
