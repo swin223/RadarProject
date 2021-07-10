@@ -1165,8 +1165,7 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
     m_limbsCurve->SetData(vecCur2x,vecCur2y);m_limbsCurve->SetContinuity(true);
     m_vmdCurve->SetData(vecCur3x,vecCur3y);m_vmdCurve->SetContinuity(true);
 
-
-
+    // 坐标轴相关更新
     auto min1y = std::min_element(std::begin(vecCur1y),std::end(vecCur1y));
     auto max1y = std::max_element(std::begin(vecCur1y),std::end(vecCur1y));
 
