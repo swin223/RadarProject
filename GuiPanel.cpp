@@ -950,7 +950,7 @@ wxOfflinePagePanel::wxOfflinePagePanel(wxPanel *parent) : wxPanel(parent,wxID_AN
     wxStaticText *mdWinText = new wxStaticText(this,wxID_STATIC,wxT("Micro-Doppler Map"));
     wxStaticText *torsoWinText = new wxStaticText(this,wxID_STATIC,wxT("Torso Curve"));
     wxStaticText *limbsWinText = new wxStaticText(this,wxID_STATIC,wxT("Limbs Curve"));
-    wxStaticText *vmdWinText = new wxStaticText(this,wxID_STATIC,wxT("VMD Vector"));
+    wxStaticText *vmdWinText = new wxStaticText(this,wxID_STATIC,wxT("SVD Vector"));
     // 图像layer
     m_mdPic = new mpBitmapLayer;
     m_mdWin->AddLayer(m_mdPic);
@@ -1165,9 +1165,20 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
     m_limbsCurve->SetData(vecCur2x,vecCur2y);m_limbsCurve->SetContinuity(true);
     m_vmdCurve->SetData(vecCur3x,vecCur3y);m_vmdCurve->SetContinuity(true);
 
-    m_torsoWin->Update();m_torsoWin->Fit();
-    m_limbsWin->Update();m_limbsWin->Fit();
-    m_vmdWin->Update();m_vmdWin->Fit();
+
+
+    auto min1y = std::min_element(std::begin(vecCur1y),std::end(vecCur1y));
+    auto max1y = std::max_element(std::begin(vecCur1y),std::end(vecCur1y));
+
+    auto max2y = std::max_element(std::begin(vecCur2y),std::end(vecCur2y));
+    double min2yValue = -(*max2y)*0.5;
+
+    auto min3y = std::min_element(std::begin(vecCur3y),std::end(vecCur3y));
+    double max3yValue = -(*min3y)*0.5;
+
+    m_torsoWin->Update();m_torsoWin->Fit(-15*timeRes,vecCur1x.size()*timeRes,(*min1y)*1.5,(*max1y)*1.5);
+    m_limbsWin->Update();m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,min2yValue,(*max2y)*1.5);
+    m_vmdWin->Update();m_vmdWin->Fit(-15,vecCur3x.size(),(*min3y)*1.5,max3yValue);
 
 
 
