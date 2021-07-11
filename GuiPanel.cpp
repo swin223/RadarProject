@@ -119,7 +119,7 @@ END_EVENT_TABLE()
  * @param parent 父窗口指针
  */
 wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
-                 : wxPanel(parent)
+    : wxPanel(parent)
 {
     /* ---------------------------------------------- 控件设定 + 页面布局 ----------------------------------------------- */
     // 按钮
@@ -218,7 +218,8 @@ void PacketProcessThread::OnExit()
 wxThread::ExitCode PacketProcessThread::Entry()
 {
     // 线程自启动开始一直检查是否有包 - 有则处理无则等待
-    while(!TestDestroy()){
+    while(!TestDestroy())
+    {
 
         // 若包队列无UDP包数据
         if(m_fatherPanel->m_packetQueue.empty()) continue;
@@ -243,8 +244,8 @@ wxThread::ExitCode PacketProcessThread::Entry()
         {
             int errorOffset = m_modifyFrame->getRightByte().second;
             m_insertPos = std::copy_n(reinterpret_cast<int16_t *>(udpPacketPtr + m_udpParam->m_bufOffset + errorOffset),
-                                    (m_udpParam->m_bufSize - m_udpParam->m_bufOffset - errorOffset) / m_udpParam->m_bufScale,
-                                    m_insertPos);
+                                      (m_udpParam->m_bufSize - m_udpParam->m_bufOffset - errorOffset) / m_udpParam->m_bufScale,
+                                      m_insertPos);
             m_FirstFixFlag = false;  // 后面就正常了
             m_prePacketSeq = m_modifyFrame->getRightByte().first + 1;
             delete[] udpPacketPtr;
@@ -274,16 +275,16 @@ wxThread::ExitCode PacketProcessThread::Entry()
             if (remainLength >= (m_udpParam->m_bufSize - m_udpParam->m_bufOffset) / m_udpParam->m_bufScale)
             {
                 m_insertPos = std::copy_n(reinterpret_cast<int16_t *>(udpPacketPtr + m_udpParam->m_bufOffset),      // 源地址
-                                        (m_udpParam->m_bufSize - m_udpParam->m_bufOffset) / m_udpParam->m_bufScale,   // 复制元素个数
-                                        m_insertPos);                                                              // 目的起始地址
+                                          (m_udpParam->m_bufSize - m_udpParam->m_bufOffset) / m_udpParam->m_bufScale,   // 复制元素个数
+                                          m_insertPos);                                                              // 目的起始地址
             }
             // 分支2 - 帧数据流目前没有空间存下当前所有数据
             else
             {
                 // 将一个UDP包的部分内容填充进帧数据流
                 m_insertPos = std::copy_n(reinterpret_cast<int16_t *>(udpPacketPtr + m_udpParam->m_bufOffset),
-                                        remainLength,
-                                        m_insertPos);
+                                          remainLength,
+                                          m_insertPos);
 
                 // 保存相应的数据到bin文件中
                 // 创建一个用于保存整数帧数据的data.bin文件 - 存在即使用append
@@ -320,7 +321,8 @@ wxThread::ExitCode PacketProcessThread::Entry()
                 // 图像也进行存储
                 (*(m_fatherPanel->m_capture)) >> (*m_singleFramePic);
                 // 存图像
-                if (m_fatherPanel->m_outputVideo->isOpened()) {
+                if (m_fatherPanel->m_outputVideo->isOpened())
+                {
                     (*m_fatherPanel->m_outputVideo) << (*m_singleFramePic);
                 }
                 // 转颜色
@@ -342,9 +344,9 @@ wxThread::ExitCode PacketProcessThread::Entry()
                 // 一帧结束，重新设置insertPos 并把剩余的数据复制到帧数据流中存储
                 m_insertPos = m_radarCube->getFrame().begin();
                 m_insertPos = std::copy_n(
-                        reinterpret_cast<int16_t *>(udpPacketPtr + m_udpParam->m_bufOffset + remainLength * m_udpParam->m_bufScale),
-                        ((m_udpParam->m_bufSize - m_udpParam->m_bufOffset) / m_udpParam->m_bufScale) - remainLength,
-                        m_insertPos);
+                                  reinterpret_cast<int16_t *>(udpPacketPtr + m_udpParam->m_bufOffset + remainLength * m_udpParam->m_bufScale),
+                                  ((m_udpParam->m_bufSize - m_udpParam->m_bufOffset) / m_udpParam->m_bufScale) - remainLength,
+                                  m_insertPos);
             }
         }
         // 删除那一个在动态内存中new出来数据部分
@@ -496,27 +498,27 @@ void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)
     // 事件类型触发
     switch (event.GetSocketEvent())
     {
-        case wxSOCKET_INPUT:
-        {
-            // wxSOCKET_INPUT_FLAG标志会在数据到来时触发，会引起中断
-            // 我们SetNotify wxSOCKET_LOST_FLAG 用以失去所有flag的bit位信息表示事件不触发
-            m_mySocket->SetNotify(wxSOCKET_LOST_FLAG);
+    case wxSOCKET_INPUT:
+    {
+        // wxSOCKET_INPUT_FLAG标志会在数据到来时触发，会引起中断
+        // 我们SetNotify wxSOCKET_LOST_FLAG 用以失去所有flag的bit位信息表示事件不触发
+        m_mySocket->SetNotify(wxSOCKET_LOST_FLAG);
 
-            // 一个UDP包的大小为1466，头部有验证信息，且要丢弃前10帧
-            UINT8 *singleUdpBufPtr = new UINT8[m_udpParam->m_bufSize];
+        // 一个UDP包的大小为1466，头部有验证信息，且要丢弃前10帧
+        UINT8 *singleUdpBufPtr = new UINT8[m_udpParam->m_bufSize];
 
-            // 从socket缓存中读取1466字节udp数据(一个包的大小)到buf
-            m_mySocket->Read(singleUdpBufPtr, m_udpParam->m_bufSize);
+        // 从socket缓存中读取1466字节udp数据(一个包的大小)到buf
+        m_mySocket->Read(singleUdpBufPtr, m_udpParam->m_bufSize);
 
-            m_packetQueue.push(singleUdpBufPtr);
+        m_packetQueue.push(singleUdpBufPtr);
 
-            // 上面wxSOCKET_LOST_FLAG 用以失去所有flag的bit位信息表示事件不触发
-            // 现在要重新SetNotify wxSOCKET_INPUT_FLAG表示现在又要对socket数据缓存区的数据进行处理
-            m_mySocket->SetNotify(wxSOCKET_INPUT_FLAG);
-            break;
-        }
-        default:
-            ;
+        // 上面wxSOCKET_LOST_FLAG 用以失去所有flag的bit位信息表示事件不触发
+        // 现在要重新SetNotify wxSOCKET_INPUT_FLAG表示现在又要对socket数据缓存区的数据进行处理
+        m_mySocket->SetNotify(wxSOCKET_INPUT_FLAG);
+        break;
+    }
+    default:
+        ;
     }
 }
 
@@ -554,7 +556,7 @@ void wxOnlinePagePanel::PacketThreadProcess(MyPlotEvent& event)
  * @param parent 父窗口指针
  */
 wxBinReplayPagePanel::wxBinReplayPagePanel(wxPanel *parent)
-                    : wxPanel(parent)
+    : wxPanel(parent)
 {
     /* ---------------------------------------------- 控件设定 + 页面布局 ----------------------------------------------- */
     // 按钮
@@ -607,8 +609,6 @@ wxBinReplayPagePanel::wxBinReplayPagePanel(wxPanel *parent)
 
     /* -------------------------------------------------- 参数初始化 -------------------------------------------------- */
 
-
-
 }
 
 /**
@@ -652,7 +652,10 @@ wxThread::ExitCode BinReplayThread::Entry()
 
     // 获取帧数 - totalFrame
     std::ifstream ifsCountFrame(binFileNameStr,std::ios::binary | std::ios::in);
-    if(!ifsCountFrame.is_open()) {return (wxThread::ExitCode)0;}
+    if(!ifsCountFrame.is_open())
+    {
+        return (wxThread::ExitCode)0;
+    }
     ifsCountFrame.seekg(0, std::ios_base::end);
     long long nFileLen = ifsCountFrame.tellg();
     long long totalFrame = nFileLen / radarParam->getFrameBytes();
@@ -660,7 +663,10 @@ wxThread::ExitCode BinReplayThread::Entry()
 
     // 打开文件
     std::ifstream ifs(binFileNameStr,std::ios::binary | std::ios::in);
-    if(!ifs.is_open()){ return (wxThread::ExitCode)0;}
+    if(!ifs.is_open())
+    {
+        return (wxThread::ExitCode)0;
+    }
 
     // 执行读取的文件
     while (totalFrame-- && !TestDestroy())
@@ -679,7 +685,8 @@ wxThread::ExitCode BinReplayThread::Entry()
         wxImage *RdImage = new wxImage(RdCols, RdRows, (uchar *) RdData, false);
 
         // 微多普勒图也进行更新
-        if (m_mdMapDrawFlagOL) {
+        if (m_mdMapDrawFlagOL)
+        {
             radarCube->setFlagForMap();
             m_mdMapDrawFlagOL = false;
         }
@@ -826,7 +833,7 @@ void wxBinReplayPagePanel::ReplayThreadProcess(MyPlotEvent& event)
  * @param title 窗口名称
  */
 wxReplayFileDialog::wxReplayFileDialog(wxBinReplayPagePanel* parent,const wxString& title)
-                  :wxDialog(parent, wxID_ANY, title, wxDefaultPosition, wxSize(700, 200))
+    :wxDialog(parent, wxID_ANY, title, wxDefaultPosition, wxSize(700, 200))
 {
     // 设置父亲
     m_father = parent;
@@ -879,7 +886,8 @@ void wxReplayFileDialog::setBinPath(wxCommandEvent& event)
 {
     // 创建wxFileDialog类获取文件路径 - 用于在界面中显示
     wxFileDialog * openFileDialog = new wxFileDialog(this);
-    if (openFileDialog->ShowModal() == wxID_OK){
+    if (openFileDialog->ShowModal() == wxID_OK)
+    {
         wxString fileName = openFileDialog->GetPath();
         m_binPath->SetValue(fileName);
     }
@@ -894,7 +902,8 @@ void wxReplayFileDialog::setVideoPath(wxCommandEvent& event)
 {
     // 创建wxFileDialog类获取文件路径 - 用于在界面中显示
     wxFileDialog * openFileDialog = new wxFileDialog(this);
-    if (openFileDialog->ShowModal() == wxID_OK){
+    if (openFileDialog->ShowModal() == wxID_OK)
+    {
         wxString fileName = openFileDialog->GetPath();
         m_videoPath->SetValue(fileName);
     }
@@ -1077,14 +1086,15 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
 
     // 雷达信号处理类相关变量初始设置
     RadarParam *radarParam = new RadarParam;                          // RadarParam对象初始化
-    RadarDataCube *radarCube = new RadarDataCube(*radarParam);     // RadarDataCube对象初始化
+    RadarDataCube *radarCube = new RadarDataCube(*radarParam);        // RadarDataCube对象初始化
     int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];   // 初始化buff
     std::vector<INT16>::iterator insertPos;                           // 设置初始复制位置
     insertPos = radarCube->getFrame().begin();                        // 定义插入帧数据中的位置初始化
 
     // 获取帧数 - totalFrame
     std::ifstream ifsCountFrame(binFileNameStr,std::ios::binary | std::ios::in);
-    if(!ifsCountFrame.is_open()) return;
+    if(!ifsCountFrame.is_open())
+        return;
     ifsCountFrame.seekg(0, std::ios_base::end);
     long long nFileLen = ifsCountFrame.tellg();
     long long totalFrame = nFileLen / radarParam->getFrameBytes();
@@ -1092,7 +1102,8 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
 
     // 打开文件
     std::ifstream ifs(binFileNameStr,std::ios::binary | std::ios::in);
-    if(!ifs.is_open()) return;
+    if(!ifs.is_open())
+        return;
 
     bool m_mdMapDrawFlag = true;
 
@@ -1109,7 +1120,8 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
         radarCube->creatRdm();
 
         // 微多普勒图也进行更新
-        if (m_mdMapDrawFlag) {
+        if (m_mdMapDrawFlag)
+        {
             radarCube->setFlagForMap();
             m_mdMapDrawFlag = false;
         }
@@ -1131,12 +1143,10 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
     memcpy(RdData, (void *) radarCube->convertMdToStaticMap(totalFrame).data, 3 * RdCols * RdRows);
     wxImage *RdImage = new wxImage(RdCols, RdRows, (uchar *) RdData, false);
 
-
     m_mdPic->SetBitmap(*RdImage,0,0,128,150);
 
-
-    m_mdWin->UpdateAll();m_mdWin->Fit();
-
+    m_mdWin->UpdateAll();
+    m_mdWin->Fit();
 
 
 #ifndef NDEBUG
@@ -1152,35 +1162,51 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
     std::vector<double> vecCur1y, vecCur2y, vecCur3y;
     arma::rowvec::iterator mIt = featureVec[0].begin();
     arma::rowvec::iterator mIt_end = featureVec[0].end();
-    for (; mIt != mIt_end; mIt++) vecCur1y.push_back(*mIt);
+    for (; mIt != mIt_end; mIt++)
+        vecCur1y.push_back(*mIt);
+
     mIt = featureVec[1].begin();
     mIt_end = featureVec[1].end();
-    for (; mIt != mIt_end; mIt++) vecCur2y.push_back(*mIt);
+    for (; mIt != mIt_end; mIt++)
+        vecCur2y.push_back(*mIt);
+
     mIt = featureVec[2].begin();
     mIt_end = featureVec[2].end();
-    for (; mIt != mIt_end; mIt++) vecCur3y.push_back(*mIt);
+    for (; mIt != mIt_end; mIt++)
+        vecCur3y.push_back(*mIt);
     // 进行绘制 - 设置三个特征矢量的x坐标
     std::vector<double> vecCur1x, vecCur2x, vecCur3x;
     double timeRes = 0.03;
-    for (int p = 0;p < vecCur1y.size();++p) vecCur1x.push_back(p*timeRes);
-    for (int p = 0;p < vecCur2y.size();++p) vecCur2x.push_back(p*timeRes);
-    for (int p = 0;p < vecCur3y.size();++p) vecCur3x.push_back(p);
+    for (int p = 0; p < vecCur1y.size(); ++p)
+        vecCur1x.push_back(p*timeRes);
 
-    m_torsoCurve->SetData(vecCur1x,vecCur1y);m_torsoCurve->SetContinuity(true);
-    m_limbsCurve->SetData(vecCur2x,vecCur2y);m_limbsCurve->SetContinuity(true);
-    m_vmdCurve->SetData(vecCur3x,vecCur3y);m_vmdCurve->SetContinuity(true);
+    for (int p = 0; p < vecCur2y.size(); ++p)
+        vecCur2x.push_back(p*timeRes);
+
+    for (int p = 0; p < vecCur3y.size(); ++p)
+        vecCur3x.push_back(p);
+
+    m_torsoCurve->SetData(vecCur1x,vecCur1y);
+    m_torsoCurve->SetContinuity(true);
+    m_limbsCurve->SetData(vecCur2x,vecCur2y);
+    m_limbsCurve->SetContinuity(true);
+    m_vmdCurve->SetData(vecCur3x,vecCur3y);
+    m_vmdCurve->SetContinuity(true);
 
     // 坐标轴相关更新
     auto minMax1y = std::minmax_element(vecCur1y.begin(),vecCur1y.end());
     auto minMax2y = std::minmax_element(vecCur2y.begin(),vecCur2y.end());
     auto minMax3y = std::minmax_element(vecCur3y.begin(),vecCur3y.end());
 
-    m_torsoWin->Update();m_torsoWin->Fit(-15*timeRes,vecCur1x.size()*timeRes,
-                                         (*minMax1y.first)*1.5,(*minMax1y.second)*1.5);
-    m_limbsWin->Update();m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,
-                                         -(*minMax2y.second)*0.5,(*minMax2y.second)*1.5);
-    m_vmdWin->Update();m_vmdWin->Fit(-15,vecCur3x.size(),
-                                     (*minMax3y.first)*1.5,-(*minMax3y.first)*0.5);
+    m_torsoWin->Update();
+    m_torsoWin->Fit(-15*timeRes,vecCur1x.size()*timeRes,
+                    (*minMax1y.first)*1.5,(*minMax1y.second)*1.5);
+    m_limbsWin->Update();
+    m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,
+                    -(*minMax2y.second)*0.5,(*minMax2y.second)*1.5);
+    m_vmdWin->Update();
+    m_vmdWin->Fit(-15,vecCur3x.size(),
+                  (*minMax3y.first)*1.5,-(*minMax3y.first)*0.5);
 
     // 关闭文件 + 释放内存
     // 关闭文件
@@ -1197,7 +1223,7 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
  * @param title 窗口名称
  */
 wxOfflineDemoFileDialog::wxOfflineDemoFileDialog(wxOfflinePagePanel* parent,const wxString& title)
-        :wxDialog(parent, wxID_ANY, title, wxDefaultPosition, wxSize(700, 140))
+    :wxDialog(parent, wxID_ANY, title, wxDefaultPosition, wxSize(700, 140))
 {
     // 设置父亲
     m_father = parent;
@@ -1241,7 +1267,8 @@ void wxOfflineDemoFileDialog::setBinPath(wxCommandEvent& event)
 {
     // 创建wxFileDialog类获取文件路径 - 用于在界面中显示
     wxFileDialog * openFileDialog = new wxFileDialog(this);
-    if (openFileDialog->ShowModal() == wxID_OK){
+    if (openFileDialog->ShowModal() == wxID_OK)
+    {
         wxString fileName = openFileDialog->GetPath();
         m_binPath->SetValue(fileName);
     }
@@ -1267,8 +1294,5 @@ void wxOfflineDemoFileDialog::Apply(wxCommandEvent& event)
     m_father->m_binPathStr = m_binPath->GetValue();
     this->Destroy();
 }
-
-
-
 
 
