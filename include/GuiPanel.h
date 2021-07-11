@@ -31,7 +31,10 @@ enum {
     ID_PAGE3_TRAIN,           ///< 对应 Offline Page - 训练集训练事件
     ID_PAGE3_TEST,            ///< 对应 Offline Page - 测试集训练事件
     ID_PAGE3_SVM,             ///< 对应 Offline Page - SVM Model产生事件
-    ID_PAGE3_DEMO             ///< 对应 Offline Page - 单个Single演示事件
+    ID_PAGE3_DEMO,            ///< 对应 Offline Page - 单个Single演示事件
+    ID_OFFLINE_BIN_PATH,      ///< 对应 Offline Page - Dialog - 设置BIN路径事件
+    ID_OFFLINE_RESET,         ///< 对应 Offline Page - Dialog - RESET事件
+    ID_OFFLINE_APPLY          ///< 对应 Offline Page - Dialog - APPLY事件
 };
 
 /* ---------------------------------------------------- MyApp类 ---------------------------------------------------- */
@@ -317,6 +320,10 @@ public:
     // 其他函数
     void refreshAll(arma::rowvec&, wxBitmap&);    ///< 所有图更新
 
+public:
+    // 离线的Bin文件和
+    wxString m_binPathStr;                        ///< 离线的Bin文件路径
+
 private:
     // 窗口控件相关
     wxTextCtrl *m_logOutPut;                               ///< 输出log信息框
@@ -324,6 +331,28 @@ private:
     mpWindow *m_mdWin,*m_torsoWin,*m_limbsWin,*m_vmdWin;   ///< 曲线图窗
     mpFXYVector *m_torsoCurve,*m_limbsCurve,*m_vmdCurve;   ///< 三个曲线layer
     mpBitmapLayer *m_mdPic;                                ///< 一个图layer
+};
+
+/**
+ * @brief wxOfflinePagePanel类 下
+ * wxOfflineDemoFileDialog类
+ * @details 主要是用于选择 Demo bin文件的消息窗口
+ */
+class wxOfflineDemoFileDialog : public wxDialog
+{
+public:
+    // 构造函数
+    wxOfflineDemoFileDialog(wxOfflinePagePanel* parent,const wxString& title); ///< 构造函数
+
+    // 事件处理函数
+    void setBinPath(wxCommandEvent& event);   ///< 设置bin文件路径
+    void Reset(wxCommandEvent& event);        ///< 重置文件路径
+    void Apply(wxCommandEvent& event);        ///< 应用文件路径
+
+private:
+    // 窗口控件相关
+    wxTextCtrl *m_binPath;                   ///< 离线的Bin Demo文件路径 - 用于text显示
+    wxOfflinePagePanel *m_father;            ///< 父窗口指针
 };
 
 // todo - 一些new出来的要去清理

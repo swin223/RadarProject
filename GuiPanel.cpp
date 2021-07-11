@@ -1066,9 +1066,14 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
     // 输出消息重定位
     wxLog::SetActiveTarget(m_console);
 
-    // 获取文件路径
-    // todo - 做一个wxdialog
-    std::string binFileNameStr = "a9p3r7.bin";  //todo
+    // 创建Dialog用于输入路径
+    wxOfflineDemoFileDialog* DemoBinFileDialog = new wxOfflineDemoFileDialog(this,wxT("Bin Demo File Path Setting"));
+
+    // 输出消息
+    wxLogMessage(_("Please wait for the result to display ... "));
+
+    // 得到Demo文件路径
+    std::string binFileNameStr = this->m_binPathStr.ToStdString();
 
     // 雷达信号处理类相关变量初始设置
     RadarParam *radarParam = new RadarParam;                          // RadarParam对象初始化
@@ -1185,6 +1190,84 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
     delete radarParam;
     delete radarCube;
 }
+
+/**
+ * @brief wxReplayFileDialog类 - 构造函数
+ * @param parent 父窗口指针
+ * @param title 窗口名称
+ */
+wxOfflineDemoFileDialog::wxOfflineDemoFileDialog(wxOfflinePagePanel* parent,const wxString& title)
+        :wxDialog(parent, wxID_ANY, title, wxDefaultPosition, wxSize(700, 140))
+{
+    // 设置父亲
+    m_father = parent;
+    // 静态文本设置
+    wxStaticText *binPathText = new wxStaticText(this, wxID_ANY, wxT("Bin File Path"),wxDefaultPosition,wxSize(150,30));
+    // 路径显示
+    m_binPath = new wxTextCtrl(this, wxID_ANY, wxT(""),wxDefaultPosition,wxSize(300,30));
+    // 按钮设置
+    wxButton *btBinPath = new wxButton(this, ID_OFFLINE_BIN_PATH, wxT("Select Path..."),wxDefaultPosition,wxSize(150,30));
+    wxButton *btReset = new wxButton(this, ID_OFFLINE_RESET, wxT("RESET"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btApply = new wxButton(this, ID_OFFLINE_APPLY, wxT("APPLY"),wxDefaultPosition,wxSize(150,30));
+    // 设置布局控件
+    wxBoxSizer *hBoxSizer1 = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer *hBoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
+    hBoxSizer1->Add(binPathText,0,wxLEFT,10);
+    hBoxSizer1->Add(m_binPath,0,wxLEFT,10);
+    hBoxSizer1->Add(btBinPath,0,wxLEFT | wxRIGHT,10);
+    hBoxSizer2->Add(btReset,0,wxLEFT,10);
+    hBoxSizer2->Add(btApply,0,wxLEFT | wxRIGHT,10);
+    wxBoxSizer *vBoxSizer = new wxBoxSizer(wxVERTICAL);
+    vBoxSizer->Add(hBoxSizer1,0,wxALL | wxALIGN_CENTRE_HORIZONTAL,10);
+    vBoxSizer->Add(hBoxSizer2,0,wxALL | wxALIGN_CENTRE_HORIZONTAL,10);
+    this->SetSizer(vBoxSizer);
+
+    // 链接响应事件
+    Connect(ID_OFFLINE_BIN_PATH, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflineDemoFileDialog::setBinPath));
+    Connect(ID_OFFLINE_RESET, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflineDemoFileDialog::Reset));
+    Connect(ID_OFFLINE_APPLY, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflineDemoFileDialog::Apply));
+
+    // 在屏幕中居中显示
+    Centre();
+    // 显示消息对话框
+    this->ShowModal();
+}
+
+/**
+ * @brief wxOfflineDemoFileDialog类 - setBinPath函数
+ * @param event 触发事件
+ */
+void wxOfflineDemoFileDialog::setBinPath(wxCommandEvent& event)
+{
+    // 创建wxFileDialog类获取文件路径 - 用于在界面中显示
+    wxFileDialog * openFileDialog = new wxFileDialog(this);
+    if (openFileDialog->ShowModal() == wxID_OK){
+        wxString fileName = openFileDialog->GetPath();
+        m_binPath->SetValue(fileName);
+    }
+    delete openFileDialog;
+}
+
+/**
+ * @brief wxOfflineDemoFileDialog类 - Reset函数
+ * @param event 触发事件
+ */
+void wxOfflineDemoFileDialog::Reset(wxCommandEvent& event)
+{
+    m_binPath->Clear();
+}
+
+/**
+ * @brief wxOfflineDemoFileDialog类 - Apply函数
+ * @param event 触发事件
+ */
+void wxOfflineDemoFileDialog::Apply(wxCommandEvent& event)
+{
+    // 获取路径 - 用于代码
+    m_father->m_binPathStr = m_binPath->GetValue();
+    this->Destroy();
+}
+
 
 
 
