@@ -4,7 +4,7 @@ cmake-build-release
 .idea
 
 # Filter out folders Large file
-VideoAndBinFile
+02_VideoAndBinFile
 
 # Compiled XeLaTex Temporary files
 *.aux
