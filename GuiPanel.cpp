@@ -1166,20 +1166,16 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
     m_vmdCurve->SetData(vecCur3x,vecCur3y);m_vmdCurve->SetContinuity(true);
 
     // 坐标轴相关更新
-    auto min1y = std::min_element(std::begin(vecCur1y),std::end(vecCur1y));
-    auto max1y = std::max_element(std::begin(vecCur1y),std::end(vecCur1y));
+    auto minMax1y = std::minmax_element(vecCur1y.begin(),vecCur1y.end());
+    auto minMax2y = std::minmax_element(vecCur2y.begin(),vecCur2y.end());
+    auto minMax3y = std::minmax_element(vecCur3y.begin(),vecCur3y.end());
 
-    auto max2y = std::max_element(std::begin(vecCur2y),std::end(vecCur2y));
-    double min2yValue = -(*max2y)*0.5;
-
-    auto min3y = std::min_element(std::begin(vecCur3y),std::end(vecCur3y));
-    double max3yValue = -(*min3y)*0.5;
-
-    m_torsoWin->Update();m_torsoWin->Fit(-15*timeRes,vecCur1x.size()*timeRes,(*min1y)*1.5,(*max1y)*1.5);
-    m_limbsWin->Update();m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,min2yValue,(*max2y)*1.5);
-    m_vmdWin->Update();m_vmdWin->Fit(-15,vecCur3x.size(),(*min3y)*1.5,max3yValue);
-
-
+    m_torsoWin->Update();m_torsoWin->Fit(-15*timeRes,vecCur1x.size()*timeRes,
+                                         (*minMax1y.first)*1.5,(*minMax1y.second)*1.5);
+    m_limbsWin->Update();m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,
+                                         -(*minMax2y.second)*0.5,(*minMax2y.second)*1.5);
+    m_vmdWin->Update();m_vmdWin->Fit(-15,vecCur3x.size(),
+                                     (*minMax3y.first)*1.5,-(*minMax3y.first)*0.5);
 
     // 关闭文件 + 释放内存
     // 关闭文件
