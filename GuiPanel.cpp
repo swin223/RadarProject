@@ -651,22 +651,17 @@ wxThread::ExitCode BinReplayThread::Entry()
     insertPos = radarCube->getFrame().begin();                      // 定义插入帧数据中的位置初始化
 
     // 获取帧数 - totalFrame
-    std::ifstream ifsCountFrame(binFileNameStr,std::ios::binary | std::ios::in);
-    if(!ifsCountFrame.is_open())
-    {
-        return (wxThread::ExitCode)0;
-    }
-    ifsCountFrame.seekg(0, std::ios_base::end);
-    long long nFileLen = ifsCountFrame.tellg();
-    long long totalFrame = nFileLen / radarParam->getFrameBytes();
-    ifsCountFrame.close();
-
-    // 打开文件
     std::ifstream ifs(binFileNameStr,std::ios::binary | std::ios::in);
     if(!ifs.is_open())
     {
         return (wxThread::ExitCode)0;
     }
+    ifs.seekg(0, std::ios_base::end);
+    long long nFileLen = ifs.tellg();
+    long long totalFrame = nFileLen / radarParam->getFrameBytes();
+    // 文件指针回到开头
+    ifs.clear();                 // 文件指针重定位前对流状态标志进行清除操作
+    ifs.seekg(0,std::ios::beg);  // 文件指针重定位
 
     // 执行读取的文件
     while (totalFrame-- && !TestDestroy())
@@ -1102,18 +1097,15 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
     insertPos = radarCube->getFrame().begin();                        // 定义插入帧数据中的位置初始化
 
     // 获取帧数 - totalFrame
-    std::ifstream ifsCountFrame(binFileNameStr, std::ios::binary | std::ios::in);
-    if(!ifsCountFrame.is_open())
-        return;
-    ifsCountFrame.seekg(0, std::ios_base::end);
-    long long nFileLen = ifsCountFrame.tellg();
-    long long totalFrame = nFileLen / radarParam->getFrameBytes();
-    ifsCountFrame.close();
-
-    // 打开文件
     std::ifstream ifs(binFileNameStr, std::ios::binary | std::ios::in);
     if(!ifs.is_open())
         return;
+    ifs.seekg(0, std::ios_base::end);
+    long long nFileLen = ifs.tellg();
+    long long totalFrame = nFileLen / radarParam->getFrameBytes();
+    // 文件指针回到开头
+    ifs.clear();                 // 文件指针重定位前对流状态标志进行清除操作
+    ifs.seekg(0,std::ios::beg);  // 文件指针重定位
 
     bool m_mdMapDrawFlag = true;
 
