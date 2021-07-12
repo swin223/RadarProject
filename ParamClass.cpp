@@ -6,7 +6,7 @@
  */
 unsigned long RadarParam::getFrameBytes() const
 {
-    // IQ通道 - 2  +  16bit - 2
+    // IQ两个通道，每个通道16bit位的数据，因此2*2
     unsigned long singleFrameBytes = m_adcSample * m_nChirp * m_nRx * 2 * 2;
     return singleFrameBytes;
 }

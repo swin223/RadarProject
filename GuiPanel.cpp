@@ -1072,27 +1072,28 @@ void wxOfflinePagePanel::SvmModel(wxCommandEvent& event)
  */
 void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
 {
-    // 输出消息重定位
+    // 输出消息重定向到TextCtrl窗口
     wxLog::SetActiveTarget(m_console);
 
-    // 创建Dialog用于输入路径
+    // 创建Dialog用于输入bin文件的路径
     wxOfflineDemoFileDialog* DemoBinFileDialog = new wxOfflineDemoFileDialog(this,wxT("Bin Demo File Path Setting"));
 
     // 输出消息
     wxLogMessage(_("Please wait for the result to display ... "));
 
     // 得到Demo文件路径
-    std::string binFileNameStr = this->m_binPathStr.ToStdString();
+    std::string binFileNameStr = m_binPathStr.ToStdString();
 
     // 雷达信号处理类相关变量初始设置
     RadarParam *radarParam = new RadarParam;                          // RadarParam对象初始化
     RadarDataCube *radarCube = new RadarDataCube(*radarParam);        // RadarDataCube对象初始化
     int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];   // 初始化buff
+
     std::vector<INT16>::iterator insertPos;                           // 设置初始复制位置
     insertPos = radarCube->getFrame().begin();                        // 定义插入帧数据中的位置初始化
 
     // 获取帧数 - totalFrame
-    std::ifstream ifsCountFrame(binFileNameStr,std::ios::binary | std::ios::in);
+    std::ifstream ifsCountFrame(binFileNameStr, std::ios::binary | std::ios::in);
     if(!ifsCountFrame.is_open())
         return;
     ifsCountFrame.seekg(0, std::ios_base::end);
@@ -1101,7 +1102,7 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
     ifsCountFrame.close();
 
     // 打开文件
-    std::ifstream ifs(binFileNameStr,std::ios::binary | std::ios::in);
+    std::ifstream ifs(binFileNameStr, std::ios::binary | std::ios::in);
     if(!ifs.is_open())
         return;
 
