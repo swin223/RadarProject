@@ -17,7 +17,8 @@ add_executable(RealTimeCommunication
         ParamClass.cpp
         imagepanel.cpp
         mathplot.cpp
-        )
+        svm.cpp
+        MySvmClass.cpp)
 
 #查找Opencv库
 find_package(OpenCV REQUIRED)

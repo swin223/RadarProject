@@ -1063,7 +1063,16 @@ void wxOfflinePagePanel::SvmModel(wxCommandEvent& event)
     // 输出消息重定位
     wxLog::SetActiveTarget(m_console);
 
-    wxLogMessage(_("In development !"));
+    // todo - 临时指定
+    DividePara dividePara = {
+            .m_trainSampleNum = 648,
+            .m_testSampleNum = 216,
+            .m_featureDim = 403
+    };
+
+    MySvmClass mySvmClass(dividePara);
+    mySvmClass.GetSvmModel();        // 训练svm以得到svm模型
+    mySvmClass.predictSvm();         // 用测试集大体预测
 }
 
 /**

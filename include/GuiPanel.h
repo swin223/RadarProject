@@ -7,6 +7,7 @@
 #include "wxImagePanel.h"
 #include "mathplot.h"
 #include <queue>
+#include "MySvmClass.h"
 
 /**
  * @brief 枚举定义
