@@ -1034,7 +1034,40 @@ void wxOfflinePagePanel::TrainDataSet(wxCommandEvent& event)
     // 输出消息重定位
     wxLog::SetActiveTarget(m_console);
 
-    wxLogMessage(_("In development !"));
+    // 选择训练集所在的文件夹位置
+    wxDirDialog *openDirDialog = new wxDirDialog(this,wxT("Please select the folder where the training set is located..."));
+    if(openDirDialog->ShowModal() != wxID_OK)
+    {
+        return;
+    }
+
+    size_t fileCount = 0;                              // 文件夹中对应类型的文件总数
+    wxArrayString filesArray;                          // 存放文件夹中对应类型的文件名数组
+    wxString trainSetPath = openDirDialog->GetPath();  // 获取指定文件夹路径
+    wxDir dir(trainSetPath);                           // wxDir类允许枚举目录中的文件
+
+    if(dir.IsOpened())
+    {
+        wxString filter = wxT("*.bin");             // 过滤指定文件
+        fileCount = dir.GetAllFiles(trainSetPath,&filesArray,filter,wxDIR_DEFAULT);
+    }
+
+    // 每个bin文件的文件名中第二个字符表示动作类别
+    // 例如 a1p1r1.bin 表示 动作类别1 - 第1个人 - 第1次重复执行
+    // 读出tag表示该bin文件处理结果
+    wxString::reverse_iterator rIter = filesArray[0].rbegin();
+    int tag = *(rIter + 8) - '0';
+
+#ifndef NDEBUG
+    std::cout << tag << std::endl;
+#endif
+
+    wxLogMessage(filesArray[0]);
+
+
+
+
+
 }
 
 /**

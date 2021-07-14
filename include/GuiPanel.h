@@ -1,12 +1,14 @@
 #ifndef REALTIMECOMMUNICATION_GUIPANEL_H
 #define REALTIMECOMMUNICATION_GUIPANEL_H
 
+#include <queue>
+#include <wx/dir.h>
+#include <wx/dirdlg.h>
 #include "wx/wx.h"
 #include "wx/socket.h"
 #include "RadarDataCube.h"
 #include "wxImagePanel.h"
 #include "mathplot.h"
-#include <queue>
 #include "MySvmClass.h"
 
 /**
