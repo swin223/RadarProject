@@ -358,6 +358,35 @@ private:
     wxOfflinePagePanel *m_father;            ///< 父窗口指针
 };
 
+/**
+ * @brief wxOfflinePagePanel类 下
+ * OfflineFunctionClass类
+ * @details 主要用于实现Offline Page下的所有功能
+ */
+class OfflineFunctionClass
+{
+public:
+    /// 构造函数
+    OfflineFunctionClass(wxOfflinePagePanel *parent);
+    void GetFileNamesAndTag();               ///< 获取文件夹下的全文件名以及对应的分类
+    void trainSetProcess();                  ///< 训练集处理 (提取特征 + 标准化(输出最大最小值文件) + 输出)
+    void testSetProcess();                   ///< 测试集处理 (提取特征 + 标准化(按最大最小值文件标准化) + 输出)
+
+private:
+    /// 训练集数据集数据标准化
+    void trainSetNormalized(arma::mat &sampleFeatureMat);
+    /// 测试集数据集数据标准化
+    void testSetNormalized(arma::mat &sampleFeatureMat);
+    /// 输出特征文件(.txt)
+    void printFeatureData(arma::mat& sampleFeatureMat,const std::string& outputFileName);
+
+private:
+    DividePara m_dividePara;                 ///< 数据集划分参数
+    wxOfflinePagePanel *m_father;            ///< 父窗口指针
+    wxArrayString m_filesArray;              ///< 对应文件夹下的全文件名数组
+    std::vector<int> m_tagArray;             ///< 对应文件夹下的全文件对应的分类类别
+};
+
 // todo - 一些new出来的要去清理
 
 #endif //REALTIMECOMMUNICATION_GUIPANEL_H

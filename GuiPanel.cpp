@@ -1034,40 +1034,13 @@ void wxOfflinePagePanel::TrainDataSet(wxCommandEvent& event)
     // 输出消息重定位
     wxLog::SetActiveTarget(m_console);
 
-    // 选择训练集所在的文件夹位置
-    wxDirDialog *openDirDialog = new wxDirDialog(this,wxT("Please select the folder where the training set is located..."));
-    if(openDirDialog->ShowModal() != wxID_OK)
-    {
-        return;
-    }
+    // 创建离线操作类
+    OfflineFunctionClass offlineFunc(this);
+    offlineFunc.GetFileNamesAndTag();
+    offlineFunc.trainSetProcess();
 
-    size_t fileCount = 0;                              // 文件夹中对应类型的文件总数
-    wxArrayString filesArray;                          // 存放文件夹中对应类型的文件名数组
-    wxString trainSetPath = openDirDialog->GetPath();  // 获取指定文件夹路径
-    wxDir dir(trainSetPath);                           // wxDir类允许枚举目录中的文件
-
-    if(dir.IsOpened())
-    {
-        wxString filter = wxT("*.bin");             // 过滤指定文件
-        fileCount = dir.GetAllFiles(trainSetPath,&filesArray,filter,wxDIR_DEFAULT);
-    }
-
-    // 每个bin文件的文件名中第二个字符表示动作类别
-    // 例如 a1p1r1.bin 表示 动作类别1 - 第1个人 - 第1次重复执行
-    // 读出tag表示该bin文件处理结果
-    wxString::reverse_iterator rIter = filesArray[0].rbegin();
-    int tag = *(rIter + 8) - '0';
-
-#ifndef NDEBUG
-    std::cout << tag << std::endl;
-#endif
-
-    wxLogMessage(filesArray[0]);
-
-
-
-
-
+    wxLogMessage(_("训练集处理完毕..."));
+    wxLogMessage(_("请您继续完成测试集的特征提取..."));
 }
 
 /**
@@ -1079,7 +1052,13 @@ void wxOfflinePagePanel::TestDataSet(wxCommandEvent& event)
     // 输出消息重定位
     wxLog::SetActiveTarget(m_console);
 
-    wxLogMessage(_("In development !"));
+    // 创建离线操作类
+    OfflineFunctionClass offlineFunc(this);
+    offlineFunc.GetFileNamesAndTag();
+    offlineFunc.testSetProcess();
+
+    wxLogMessage(_("测试集处理完毕..."));
+    wxLogMessage(_("可以继续执行svm分类等操作..."));
 }
 
 /**
@@ -1095,7 +1074,7 @@ void wxOfflinePagePanel::SvmModel(wxCommandEvent& event)
     DividePara dividePara = {
             .m_trainSampleNum = 648,
             .m_testSampleNum = 216,
-            .m_featureDim = 403
+            .m_featureDim = 401
     };
 
     MySvmClass mySvmClass(dividePara);
@@ -1330,4 +1309,339 @@ void wxOfflineDemoFileDialog::Apply(wxCommandEvent& event)
     this->Destroy();
 }
 
+/**
+ * @brief OfflineFunctionClass类 - 构造函数
+ * @param parent 父窗口指针
+ */
+OfflineFunctionClass::OfflineFunctionClass(wxOfflinePagePanel *parent)
+{
+    // 得到父窗口指针
+    m_father = parent;
+    // 数据集划分参数初始化
+    m_dividePara = {
+            .m_trainSampleNum = 648,
+            .m_testSampleNum = 216,
+            .m_featureDim = 401
+    };
+}
 
+/**
+ * @brief 获取文件夹下的全文件名以及对应的分类
+ * @details 为后续训练集和测试集bin文件读取及提取特征做预备
+ */
+void OfflineFunctionClass::GetFileNamesAndTag()
+{
+    // 选择部分数据集所在的文件夹位置
+    wxDirDialog *openDirDialog = new wxDirDialog(m_father,wxT("Please select the folder where the data set is located..."));
+    if(openDirDialog->ShowModal() != wxID_OK)
+    {
+        return;
+    }
+
+    size_t fileCount = 0;                             // 文件夹中对应类型的文件总数
+    wxString dataSetPath = openDirDialog->GetPath();  // 获取指定文件夹路径
+    wxDir dir(dataSetPath);                           // wxDir类允许枚举目录中的文件
+
+    if(dir.IsOpened())
+    {
+        wxString filter = wxT("*.bin");             // 过滤指定文件
+        fileCount = dir.GetAllFiles(dataSetPath,&m_filesArray,filter,wxDIR_DEFAULT);
+    }
+
+    // 每个bin文件的文件名中第二个字符表示动作类别
+    // 例如 a1p1r1.bin 表示 动作类别1 - 第1个人 - 第1次重复执行
+    // 读出tag表示该bin文件处理结果
+    for(int i = 0;i < fileCount;++i)
+    {
+        wxString::reverse_iterator rIter = m_filesArray[i].rbegin();
+        if(*(rIter + 7) != 'p'){
+            int tag = *(rIter + 9) - '0';
+            m_tagArray.push_back(tag);
+        }
+        else
+        {
+            int tag = *(rIter + 8) - '0';
+            m_tagArray.push_back(tag);
+        }
+    }
+
+#ifndef NDEBUG
+    for(int i = 0;i < fileCount;++i)
+    {
+        std::cout << m_filesArray[i].ToStdString() << std::endl;
+        std::cout << m_tagArray[i] << std::endl;
+    }
+#endif
+
+    wxLogMessage(_("已读取指定文件夹的所有文件的路径及类别..."));
+}
+
+/**
+ * @brief 训练集数据集数据标准化
+ * @param sampleFeatureMat 训练集的特征值矩阵
+ * @details 对训练集中提取的特征数据进行数据标准化，会输出一个最大最小值文件来用于对测试集也进行标准化
+ */
+void OfflineFunctionClass::trainSetNormalized(arma::mat &sampleFeatureMat)
+{
+    // 得到训练集特征矩阵的每一行列的最大最小值
+    arma::rowvec featureMax = max(sampleFeatureMat, 0);
+    arma::rowvec featureMin = min(sampleFeatureMat, 0);
+
+    // 标准化最大最小值
+    int yMax = 1,yMin = -1;
+
+    // 标准化
+    for (arma::uword i = 0; i < m_dividePara.m_featureDim; i++)
+    {
+        sampleFeatureMat.col(i) = (yMax - yMin) * (sampleFeatureMat.col(i) - featureMin(i))
+                                / (featureMax(i) - featureMin(i)) + yMin;
+    }
+
+    // 输出最大最小值文件(.txt)以保证测试集按照最大最小值来进行标准化
+    std::ofstream maxMinFs("MaxMinOut.txt", std::ios::out);
+    arma::rowvec::iterator it = featureMin.begin();
+    arma::rowvec::iterator itEnd = featureMin.end();
+    for(;it < itEnd;++it)
+    {
+        maxMinFs << (*it) << " ";
+    }
+    maxMinFs << std::endl;
+
+    it = featureMax.begin();
+    itEnd = featureMax.end();
+    for (; it < itEnd; it++)
+    {
+        maxMinFs << (*it) << " ";
+    }
+    maxMinFs << std::endl;
+
+    // 输出后，关闭文件描述符
+    maxMinFs.close();
+
+    wxLogMessage(_("训练集特征矩阵标准化完毕..."));
+}
+
+/**
+ * @brief 测试集数据集数据标准化
+ * @param sampleFeatureMat 测试集的特征值矩阵
+ * @details 对测试集中提取的特征数据进行数据标准化，会读取训练集标准化后输出的一个最大最小值文件来用于对测试集进行标准化
+ */
+void OfflineFunctionClass::testSetNormalized(arma::mat &sampleFeatureMat)
+{
+    // 得到测试集特征矩阵的每一行列的最大最小值
+    arma::rowvec featureMax = max(sampleFeatureMat, 0);
+    arma::rowvec featureMin = min(sampleFeatureMat, 0);
+
+    // 标准化最大最小值
+    int yMax = 1,yMin = -1;
+
+    // 读取训练集最大最小值数据
+    std::ifstream maxMinFs("MaxMinOut.txt", std::ios::in);
+    for (arma::uword i = 0; i < sampleFeatureMat.n_cols; i++)
+    {
+        maxMinFs >> featureMin(i);
+    }
+    for (arma::uword i = 0; i < sampleFeatureMat.n_cols; i++)
+    {
+        maxMinFs >> featureMax(i);
+    }
+
+    // 标准化
+    for (arma::uword i = 0; i < m_dividePara.m_featureDim; i++)
+    {
+        sampleFeatureMat.col(i) = (yMax - yMin) * (sampleFeatureMat.col(i) - featureMin(i))
+                                / (featureMax(i) - featureMin(i)) + yMin;
+    }
+
+    // 输出后，关闭文件描述符
+    maxMinFs.close();
+
+    wxLogMessage(_("测试集特征矩阵标准化完毕..."));
+}
+
+/**
+ * @brief 用于输出特征值数据到txt文件
+ * @param sampleFeatureMat 训练集/测试集特征值矩阵
+ * @param outputFileName 输出的文件名
+ */
+void OfflineFunctionClass::printFeatureData(arma::mat& sampleFeatureMat,const std::string& outputFileName)
+{
+    std::ofstream outFs(outputFileName,std::ios::out);
+    for(arma::uword i = 0;i < sampleFeatureMat.n_rows;++i)
+    {
+        for(arma::uword j = 0;j < sampleFeatureMat.n_cols;++j)
+        {
+            outFs << sampleFeatureMat.at(i,j) << " ";
+        }
+        outFs << std::endl;
+    }
+
+    // 文件输出完毕
+    outFs.close();
+}
+
+/**
+ * @brief 训练集处理
+ * @details 提取特征 + 标准化(输出最大最小值文件) + 输出
+ */
+void OfflineFunctionClass::trainSetProcess()
+{
+    // 创建特征矩阵用于存所有样本的特征 - 最后一维度为了存分类结果
+    arma::mat sampleFeature(m_dividePara.m_trainSampleNum,m_dividePara.m_featureDim + 1,arma::fill::zeros);
+
+    // 初始化数据
+    RadarParam *radarParam = new RadarParam;                             // RadarParam对象初始化
+    RadarDataCube *trainSingleCube = new RadarDataCube(*radarParam);  // RadarDataCube对象初始化
+    int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];      // 初始化buff
+    std::vector<INT16>::iterator insertPos;                              // 设置初始复制位置
+
+    wxLogMessage(_("开始从训练集对应文件夹中提取所有文件的特征..."));
+
+    // 遍历所有训练集数据，用以得到特征数据 + 分类类别
+    for(int i = 0;i < m_dividePara.m_trainSampleNum;++i)
+    {
+        std::string binFileName = m_filesArray[i].ToStdString();         // 获取要处理的训练集文件名
+        insertPos = trainSingleCube->getFrame().begin();                 // 定义插入帧数据中的位置初始化
+        // 获取帧数 - totalFrame
+        std::ifstream ifs(binFileName, std::ios::binary | std::ios::in);
+        if(!ifs.is_open())
+            return;
+        ifs.seekg(0, std::ios_base::end);
+        long long nFileLen = ifs.tellg();
+        long long totalFrame = nFileLen / radarParam->getFrameBytes();
+        // 文件指针回到开头
+        ifs.clear();                 // 文件指针重定位前对流状态标志进行清除操作
+        ifs.seekg(0,std::ios::beg);  // 文件指针重定位
+        bool m_mdMapDrawFlag = true;
+        int frameCount = totalFrame;
+
+        // 执行读取的文件
+        while (frameCount--)
+        {
+            ifs.read((char *) preBuf, radarParam->getFrameBytes());
+            std::copy_n(preBuf, radarParam->getFrameBytes() / 2, insertPos);
+
+            // 雷达数据处理
+            // 帧数据流存满 - 进行相应处理
+            trainSingleCube->creatCube();
+            trainSingleCube->creatRdm();
+
+            // 微多普勒图也进行更新
+            if (m_mdMapDrawFlag)
+            {
+                trainSingleCube->setFlagForMap();
+                m_mdMapDrawFlag = false;
+            }
+
+            trainSingleCube->updateStaticMicroMap(totalFrame);
+        }
+
+        // 所有处理结束后，会生成完整的微多普勒频谱，提取特征
+        std::vector<arma::rowvec> featureVec = trainSingleCube->extractFeature();
+        // 将提取的特征向量放在特征矩阵的第i行前部分
+        sampleFeature.row(i).cols(0,m_dividePara.m_featureDim - 1) =
+                join_rows(join_rows(featureVec[0],featureVec[1]),featureVec[2]);
+        // 将提取的特征向量放在特征矩阵的第i行末尾
+        sampleFeature.at(i,m_dividePara.m_featureDim) = m_tagArray[i];
+
+        // 输出处理进度信息
+        wxString outMessage;
+        outMessage.Printf(wxT("--- 当前处理进度: %d / %d ---"),i + 1,m_dividePara.m_trainSampleNum);
+        wxLogMessage(outMessage);
+    }
+
+    // 输出训练集的文件
+    const std::string trainSetFileName = "trainData.txt";
+    // 训练集特征数据标准化
+    trainSetNormalized(sampleFeature);
+    // 输出所有特征数据
+    printFeatureData(sampleFeature,trainSetFileName);
+
+    // 释放动态内存
+    delete radarParam;
+    delete trainSingleCube;
+    delete[] preBuf;
+}
+
+/**
+ * @brief 测试集处理
+ * @details 提取特征 + 标准化(按最大最小值文件标准化) + 输出
+ */
+void OfflineFunctionClass::testSetProcess()
+{
+    // 创建特征矩阵用于存所有样本的特征 - 最后一维度为了存分类结果
+    arma::mat sampleFeature(m_dividePara.m_testSampleNum,m_dividePara.m_featureDim + 1,arma::fill::zeros);
+
+    // 初始化数据
+    RadarParam *radarParam = new RadarParam;                             // RadarParam对象初始化
+    RadarDataCube *testSingleCube = new RadarDataCube(*radarParam);      // RadarDataCube对象初始化
+    int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];      // 初始化buff
+    std::vector<INT16>::iterator insertPos;                              // 设置初始复制位置
+
+    wxLogMessage(_("开始从测试集对应文件夹中提取所有文件的特征..."));
+
+    // 遍历所有训练集数据，用以得到特征数据 + 分类类别
+    for(int i = 0;i < m_dividePara.m_testSampleNum;++i)
+    {
+        std::string binFileName = m_filesArray[i].ToStdString();             // 获取要处理的训练集文件名
+        insertPos = testSingleCube->getFrame().begin();                      // 定义插入帧数据中的位置初始化
+        // 获取帧数 - totalFrame
+        std::ifstream ifs(binFileName, std::ios::binary | std::ios::in);
+        if(!ifs.is_open())
+            return;
+        ifs.seekg(0, std::ios_base::end);
+        long long nFileLen = ifs.tellg();
+        long long totalFrame = nFileLen / radarParam->getFrameBytes();
+        // 文件指针回到开头
+        ifs.clear();                 // 文件指针重定位前对流状态标志进行清除操作
+        ifs.seekg(0,std::ios::beg);  // 文件指针重定位
+        bool m_mdMapDrawFlag = true;
+        int frameCount = totalFrame;
+
+        // 执行读取的文件
+        while (frameCount--)
+        {
+            ifs.read((char *) preBuf, radarParam->getFrameBytes());
+            std::copy_n(preBuf, radarParam->getFrameBytes() / 2, insertPos);
+
+            // 雷达数据处理
+            // 帧数据流存满 - 进行相应处理
+            testSingleCube->creatCube();
+            testSingleCube->creatRdm();
+
+            // 微多普勒图也进行更新
+            if (m_mdMapDrawFlag)
+            {
+                testSingleCube->setFlagForMap();
+                m_mdMapDrawFlag = false;
+            }
+
+            testSingleCube->updateStaticMicroMap(totalFrame);
+        }
+
+        // 所有处理结束后，会生成完整的微多普勒频谱，提取特征
+        std::vector<arma::rowvec> featureVec = testSingleCube->extractFeature();
+        // 将提取的特征向量放在特征矩阵的第i行前部分
+        sampleFeature.row(i).cols(0,m_dividePara.m_featureDim - 1) =
+                join_rows(join_rows(featureVec[0],featureVec[1]),featureVec[2]);
+        // 将提取的特征向量放在特征矩阵的第i行末尾
+        sampleFeature.at(i,m_dividePara.m_featureDim) = m_tagArray[i];
+
+        // 输出处理进度信息
+        wxString outMessage;
+        outMessage.Printf(wxT("--- 当前处理进度: %d / %d ---"),i + 1,m_dividePara.m_testSampleNum);
+        wxLogMessage(outMessage);
+    }
+
+    // 输出测试集的文件
+    const std::string testSetFileName = "testData.txt";
+    // 测试集特征数据标准化
+    testSetNormalized(sampleFeature);
+    // 输出所有特征数据
+    printFeatureData(sampleFeature,testSetFileName);
+
+    // 释放动态内存
+    delete radarParam;
+    delete testSingleCube;
+    delete[] preBuf;
+}

@@ -9,6 +9,8 @@
 #include<opencv2/core/core.hpp>
 #include<opencv2/highgui/highgui.hpp>
 
+# define NDEBUG
+
 /**
  * @brief RadarDataCube类
  * @details 处理雷达帧数据流
