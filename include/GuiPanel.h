@@ -335,6 +335,28 @@ private:
     mpWindow *m_mdWin,*m_torsoWin,*m_limbsWin,*m_vmdWin;   ///< 曲线图窗
     mpFXYVector *m_torsoCurve,*m_limbsCurve,*m_vmdCurve;   ///< 三个曲线layer
     mpBitmapLayer *m_mdPic;                                ///< 一个图layer
+
+    // 两个分离式进程
+
+};
+
+/**
+ * @brief wxOfflinePagePanel 下
+ * FeatureExtraThread类
+ * @details 实际上这个线程类要处理的训练集和数据集的大量文件提取(为了不卡死主线程)
+ */
+class FeatureExtraThread : public wxThread
+{
+public:
+    FeatureExtraThread(wxOfflinePagePanel *parent);   ///< 构造函数
+
+    // 线程启动入口和退出
+    virtual void *Entry();                            ///< 线程入口函数
+    virtual void OnExit();                            ///< 线程退出函数
+
+public:
+    wxOfflinePagePanel *m_fatherPanel;                ///< 父亲Panel指针
+    bool trainFlag;                                   ///< 标记处理训练集(1)/测试集(0)
 };
 
 /**

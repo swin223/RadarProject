@@ -1034,13 +1034,16 @@ void wxOfflinePagePanel::TrainDataSet(wxCommandEvent& event)
     // 输出消息重定位
     wxLog::SetActiveTarget(m_console);
 
-    // 创建离线操作类
-    OfflineFunctionClass offlineFunc(this);
-    offlineFunc.GetFileNamesAndTag();
-    offlineFunc.trainSetProcess();
-
-    wxLogMessage(wxT("训练集处理完毕..."));
-    wxLogMessage(wxT("请您继续完成测试集的特征提取..."));
+    FeatureExtraThread * featureExtraThread = new FeatureExtraThread(this);
+    if ( featureExtraThread->Create() != wxTHREAD_NO_ERROR )
+    {
+        wxLogMessage(wxT("Can't open thread"));
+        delete featureExtraThread;
+        return;
+    }
+    featureExtraThread->trainFlag = true;        // 设置为true表示训练训练集
+    featureExtraThread->Run();
+    wxLogMessage(wxT("Run the thread successfully!"));
 }
 
 /**
@@ -1052,13 +1055,16 @@ void wxOfflinePagePanel::TestDataSet(wxCommandEvent& event)
     // 输出消息重定位
     wxLog::SetActiveTarget(m_console);
 
-    // 创建离线操作类
-    OfflineFunctionClass offlineFunc(this);
-    offlineFunc.GetFileNamesAndTag();
-    offlineFunc.testSetProcess();
-
-    wxLogMessage(wxT("测试集处理完毕..."));
-    wxLogMessage(wxT("可以继续执行svm分类等操作..."));
+    FeatureExtraThread * featureExtraThread = new FeatureExtraThread(this);
+    if ( featureExtraThread->Create() != wxTHREAD_NO_ERROR )
+    {
+        wxLogMessage(wxT("Can't open thread"));
+        delete featureExtraThread;
+        return;
+    }
+    featureExtraThread->trainFlag = false;        // 设置为false表示训练测试集
+    featureExtraThread->Run();
+    wxLogMessage(wxT("Run the thread successfully!"));
 }
 
 /**
@@ -1669,3 +1675,52 @@ void OfflineFunctionClass::SingleBinProcess(std::string binFileNameStr)
     delete radarParam;
     delete radarCube;
 }
+
+/**
+ * @brief FeatureExtraThread类 - 构造函数
+ * @param parent 父窗口指针
+ */
+FeatureExtraThread::FeatureExtraThread(wxOfflinePagePanel *parent) : wxThread(wxTHREAD_DETACHED)
+{
+    m_fatherPanel = parent;
+    trainFlag = true;
+}
+
+/**
+ * @brief FeatureExtraThread类 - 启动函数
+ */
+wxThread::ExitCode FeatureExtraThread::Entry()
+{
+    // 情况1 - 处理训练集
+    if(trainFlag)
+    {
+        // 创建离线操作类
+        OfflineFunctionClass offlineFunc(m_fatherPanel);
+        offlineFunc.GetFileNamesAndTag();
+        offlineFunc.trainSetProcess();
+
+        wxLogMessage(wxT("训练集处理完毕..."));
+        wxLogMessage(wxT("请您继续完成测试集的特征提取..."));
+        return (wxThread::ExitCode)0;
+    }
+
+    // 情况2 - 处理测试集
+    // 创建离线操作类
+    OfflineFunctionClass offlineFunc(m_fatherPanel);
+    offlineFunc.GetFileNamesAndTag();
+    offlineFunc.testSetProcess();
+
+    wxLogMessage(wxT("测试集处理完毕..."));
+    wxLogMessage(wxT("可以继续执行svm分类等操作..."));
+
+    return (wxThread::ExitCode)0;
+}
+
+/**
+ * @brief FeatureExtraThread类 - 退出函数
+ */
+void FeatureExtraThread::OnExit()
+{
+
+}
+
