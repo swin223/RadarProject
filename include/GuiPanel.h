@@ -310,6 +310,7 @@ public:
  */
 class wxOfflinePagePanel : public wxPanel
 {
+    friend class OfflineFunctionClass;            // 定义友元类(用以访问图窗)
 public:
     // 构造函数
     wxOfflinePagePanel(wxPanel *parent);          ///< 构造函数
@@ -371,6 +372,9 @@ public:
     void GetFileNamesAndTag();               ///< 获取文件夹下的全文件名以及对应的分类
     void trainSetProcess();                  ///< 训练集处理 (提取特征 + 标准化(输出最大最小值文件) + 输出)
     void testSetProcess();                   ///< 测试集处理 (提取特征 + 标准化(按最大最小值文件标准化) + 输出)
+    void SvmPrediction();                    ///< svm预测精度
+    /// 单个Bin文件Demo演示具体实现
+    void SingleBinProcess(std::string binFileNameStr);
 
 private:
     /// 训练集数据集数据标准化

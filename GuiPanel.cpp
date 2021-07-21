@@ -467,12 +467,12 @@ void wxOnlinePagePanel::EnableAWR1642(wxCommandEvent& event)
     m_packetProcessThread = new PacketProcessThread(this);
     if ( m_packetProcessThread->Create() != wxTHREAD_NO_ERROR )
     {
-        wxLogMessage(_("Can't open thread"));
+        wxLogMessage(wxT("Can't open thread"));
         delete m_packetProcessThread;
         return;
     }
     m_packetProcessThread->Run();
-    wxLogMessage(_("Run - Bin File Data Replay!"));
+    wxLogMessage(wxT("Run - Bin File Data Replay!"));
 }
 
 /**
@@ -741,12 +741,12 @@ void wxBinReplayPagePanel::ReplayRun(wxCommandEvent& event)
     m_binReplayThread = new BinReplayThread(this);
     if ( m_binReplayThread->Create() != wxTHREAD_NO_ERROR )
     {
-        wxLogMessage(_("Can't open thread"));
+        wxLogMessage(wxT("Can't open thread"));
         delete m_binReplayThread;
         return;
     }
     m_binReplayThread->Run();
-    wxLogMessage(_("Run the thread successfully!"));
+    wxLogMessage(wxT("Run the thread successfully!"));
 }
 
 /**
@@ -759,7 +759,7 @@ void wxBinReplayPagePanel::ReplayPause(wxCommandEvent& event)
     {
         if (m_binReplayThread->Pause() != wxTHREAD_NO_ERROR)
             wxLogError("Can't pause the thread!");
-        else  wxLogMessage(_("Pause the thread successfully!"));
+        else  wxLogMessage(wxT("Pause the thread successfully!"));
     }
     else wxLogError("The thread has ended, please run again!");
 }
@@ -774,7 +774,7 @@ void wxBinReplayPagePanel::ReplayResume(wxCommandEvent& event)
     {
         if (m_binReplayThread->Resume() != wxTHREAD_NO_ERROR)
             wxLogError("Can't resume the thread!");
-        else  wxLogMessage(_("Resume the thread successfully!"));
+        else  wxLogMessage(wxT("Resume the thread successfully!"));
     }
     else wxLogError("The thread has ended, please run again!");
 }
@@ -789,7 +789,7 @@ void wxBinReplayPagePanel::ReplayEnd(wxCommandEvent& event)
     {
         if (m_binReplayThread->Delete() != wxTHREAD_NO_ERROR)
             wxLogError("Can't delete the thread!");
-        else  wxLogMessage(_("Delete the thread successfully!"));
+        else  wxLogMessage(wxT("Delete the thread successfully!"));
         // 在调用END后再调用Pause和Resume无效，除非重新调用Run开始
         m_binReplayThread = nullptr;
     }
@@ -1039,8 +1039,8 @@ void wxOfflinePagePanel::TrainDataSet(wxCommandEvent& event)
     offlineFunc.GetFileNamesAndTag();
     offlineFunc.trainSetProcess();
 
-    wxLogMessage(_("训练集处理完毕..."));
-    wxLogMessage(_("请您继续完成测试集的特征提取..."));
+    wxLogMessage(wxT("训练集处理完毕..."));
+    wxLogMessage(wxT("请您继续完成测试集的特征提取..."));
 }
 
 /**
@@ -1057,8 +1057,8 @@ void wxOfflinePagePanel::TestDataSet(wxCommandEvent& event)
     offlineFunc.GetFileNamesAndTag();
     offlineFunc.testSetProcess();
 
-    wxLogMessage(_("测试集处理完毕..."));
-    wxLogMessage(_("可以继续执行svm分类等操作..."));
+    wxLogMessage(wxT("测试集处理完毕..."));
+    wxLogMessage(wxT("可以继续执行svm分类等操作..."));
 }
 
 /**
@@ -1069,17 +1069,10 @@ void wxOfflinePagePanel::SvmModel(wxCommandEvent& event)
 {
     // 输出消息重定位
     wxLog::SetActiveTarget(m_console);
+    OfflineFunctionClass offlineFunc(this);
+    offlineFunc.SvmPrediction();
 
-    // todo - 临时指定
-    DividePara dividePara = {
-            .m_trainSampleNum = 648,
-            .m_testSampleNum = 216,
-            .m_featureDim = 401
-    };
-
-    MySvmClass mySvmClass(dividePara);
-    mySvmClass.GetSvmModel();        // 训练svm以得到svm模型
-    mySvmClass.predictSvm();         // 用测试集大体预测
+    wxLogMessage(wxT("svm模型建立及预测处理完毕..."));
 }
 
 /**
@@ -1094,141 +1087,14 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
     // 创建Dialog用于输入bin文件的路径
     wxOfflineDemoFileDialog* DemoBinFileDialog = new wxOfflineDemoFileDialog(this,wxT("Bin Demo File Path Setting"));
 
-    // 输出消息
-    wxLogMessage(_("Please wait for the result to display ... "));
-
     // 得到Demo文件路径
     std::string binFileNameStr = m_binPathStr.ToStdString();
 
-    // 雷达信号处理类相关变量初始设置
-    RadarParam *radarParam = new RadarParam;                          // RadarParam对象初始化
-    RadarDataCube *radarCube = new RadarDataCube(*radarParam);        // RadarDataCube对象初始化
-    int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];   // 初始化buff
+    // 创建离线操作类
+    OfflineFunctionClass offlineFunc(this);
+    offlineFunc.SingleBinProcess(binFileNameStr);
 
-    std::vector<INT16>::iterator insertPos;                           // 设置初始复制位置
-    insertPos = radarCube->getFrame().begin();                        // 定义插入帧数据中的位置初始化
-
-    // 获取帧数 - totalFrame
-    std::ifstream ifs(binFileNameStr, std::ios::binary | std::ios::in);
-    if(!ifs.is_open())
-        return;
-    ifs.seekg(0, std::ios_base::end);
-    long long nFileLen = ifs.tellg();
-    long long totalFrame = nFileLen / radarParam->getFrameBytes();
-    // 文件指针回到开头
-    ifs.clear();                 // 文件指针重定位前对流状态标志进行清除操作
-    ifs.seekg(0,std::ios::beg);  // 文件指针重定位
-
-    bool m_mdMapDrawFlag = true;
-
-    int frameCount = totalFrame;
-    // 执行读取的文件
-    while (frameCount--)
-    {
-        ifs.read((char *) preBuf, radarParam->getFrameBytes());
-        std::copy_n(preBuf, radarParam->getFrameBytes() / 2, insertPos);
-
-        // 雷达数据处理
-        // 帧数据流存满 - 进行相应处理
-        radarCube->creatCube();
-        radarCube->creatRdm();
-
-        // 微多普勒图也进行更新
-        if (m_mdMapDrawFlag)
-        {
-            radarCube->setFlagForMap();
-            m_mdMapDrawFlag = false;
-        }
-
-        radarCube->updateStaticMicroMap(totalFrame);
-    }
-
-    // 所有处理结束后，会生成完整的微多普勒频谱，提取特征
-    std::vector<arma::rowvec> featureVec = radarCube->extractFeature();
-
-#ifndef NDEBUG
-    // cv::imshow("aa",radarCube->convertMdToStaticMap(totalFrame));
-    // cv::waitKey(0);
-#endif
-
-    int RdCols = radarCube->convertMdToStaticMap(totalFrame).cols, RdRows = radarCube->convertMdToStaticMap(totalFrame).rows;
-    // 使用malloc分配一块动态内存 - 目的在于独立出这块图的数据
-    void *RdData = malloc(3 * RdCols * RdRows);
-    memcpy(RdData, (void *) radarCube->convertMdToStaticMap(totalFrame).data, 3 * RdCols * RdRows);
-    wxImage *RdImage = new wxImage(RdCols, RdRows, (uchar *) RdData, false);
-
-    m_mdPic->SetBitmap(*RdImage,0,0,128,150);
-
-    m_mdWin->UpdateAll();
-    m_mdWin->Fit();
-
-
-#ifndef NDEBUG
-    featureVec[0].print();
-    std::cout << "-------------------------" << std::endl;
-    featureVec[1].print();
-    std::cout << "-------------------------" << std::endl;
-    featureVec[2].print();
-    std::cout << "-------------------------" << std::endl;
-#endif
-
-    // 进行绘制 - 设置三个特征矢量的y坐标
-    std::vector<double> vecCur1y, vecCur2y, vecCur3y;
-    arma::rowvec::iterator mIt = featureVec[0].begin();
-    arma::rowvec::iterator mIt_end = featureVec[0].end();
-    for (; mIt != mIt_end; mIt++)
-        vecCur1y.push_back(*mIt);
-
-    mIt = featureVec[1].begin();
-    mIt_end = featureVec[1].end();
-    for (; mIt != mIt_end; mIt++)
-        vecCur2y.push_back(*mIt);
-
-    mIt = featureVec[2].begin();
-    mIt_end = featureVec[2].end();
-    for (; mIt != mIt_end; mIt++)
-        vecCur3y.push_back(*mIt);
-    // 进行绘制 - 设置三个特征矢量的x坐标
-    std::vector<double> vecCur1x, vecCur2x, vecCur3x;
-    double timeRes = 0.03;
-    for (int p = 0; p < vecCur1y.size(); ++p)
-        vecCur1x.push_back(p*timeRes);
-
-    for (int p = 0; p < vecCur2y.size(); ++p)
-        vecCur2x.push_back(p*timeRes);
-
-    for (int p = 0; p < vecCur3y.size(); ++p)
-        vecCur3x.push_back(p);
-
-    m_torsoCurve->SetData(vecCur1x,vecCur1y);
-    m_torsoCurve->SetContinuity(true);
-    m_limbsCurve->SetData(vecCur2x,vecCur2y);
-    m_limbsCurve->SetContinuity(true);
-    m_vmdCurve->SetData(vecCur3x,vecCur3y);
-    m_vmdCurve->SetContinuity(true);
-
-    // 坐标轴相关更新
-    auto minMax1y = std::minmax_element(vecCur1y.begin(),vecCur1y.end());
-    auto minMax2y = std::minmax_element(vecCur2y.begin(),vecCur2y.end());
-    auto minMax3y = std::minmax_element(vecCur3y.begin(),vecCur3y.end());
-
-    m_torsoWin->Update();
-    m_torsoWin->Fit(-15*timeRes,vecCur1x.size()*timeRes,
-                    (*minMax1y.first)*1.5,(*minMax1y.second)*1.5);
-    m_limbsWin->Update();
-    m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,
-                    -(*minMax2y.second)*0.5,(*minMax2y.second)*1.5);
-    m_vmdWin->Update();
-    m_vmdWin->Fit(-15,vecCur3x.size(),
-                  (*minMax3y.first)*1.5,-(*minMax3y.first)*0.5);
-
-    // 关闭文件 + 释放内存
-    // 关闭文件
-    ifs.close();
-    // 释放内存
-    delete[] preBuf;
-    delete radarParam;
-    delete radarCube;
+    wxLogMessage(wxT("Bin文件微多普勒图生成及特征提取输出处理完毕..."));
 }
 
 /**
@@ -1373,7 +1239,7 @@ void OfflineFunctionClass::GetFileNamesAndTag()
     }
 #endif
 
-    wxLogMessage(_("已读取指定文件夹的所有文件的路径及类别..."));
+    wxLogMessage(wxT("已读取指定文件夹的所有文件的路径及类别..."));
 }
 
 /**
@@ -1418,7 +1284,7 @@ void OfflineFunctionClass::trainSetNormalized(arma::mat &sampleFeatureMat)
     // 输出后，关闭文件描述符
     maxMinFs.close();
 
-    wxLogMessage(_("训练集特征矩阵标准化完毕..."));
+    wxLogMessage(wxT("训练集特征矩阵标准化完毕..."));
 }
 
 /**
@@ -1456,7 +1322,7 @@ void OfflineFunctionClass::testSetNormalized(arma::mat &sampleFeatureMat)
     // 输出后，关闭文件描述符
     maxMinFs.close();
 
-    wxLogMessage(_("测试集特征矩阵标准化完毕..."));
+    wxLogMessage(wxT("测试集特征矩阵标准化完毕..."));
 }
 
 /**
@@ -1495,7 +1361,7 @@ void OfflineFunctionClass::trainSetProcess()
     int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];      // 初始化buff
     std::vector<INT16>::iterator insertPos;                              // 设置初始复制位置
 
-    wxLogMessage(_("开始从训练集对应文件夹中提取所有文件的特征..."));
+    wxLogMessage(wxT("开始从训练集对应文件夹中提取所有文件的特征..."));
 
     // 遍历所有训练集数据，用以得到特征数据 + 分类类别
     for(int i = 0;i < m_dividePara.m_trainSampleNum;++i)
@@ -1578,7 +1444,7 @@ void OfflineFunctionClass::testSetProcess()
     int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];      // 初始化buff
     std::vector<INT16>::iterator insertPos;                              // 设置初始复制位置
 
-    wxLogMessage(_("开始从测试集对应文件夹中提取所有文件的特征..."));
+    wxLogMessage(wxT("开始从测试集对应文件夹中提取所有文件的特征..."));
 
     // 遍历所有训练集数据，用以得到特征数据 + 分类类别
     for(int i = 0;i < m_dividePara.m_testSampleNum;++i)
@@ -1644,4 +1510,162 @@ void OfflineFunctionClass::testSetProcess()
     delete radarParam;
     delete testSingleCube;
     delete[] preBuf;
+}
+
+/**
+ * @brief svm预测精度
+ * @details 通过读取testData.txt和trainData.txt完成svm模型创建及输出
+ */
+void OfflineFunctionClass::SvmPrediction()
+{
+    // todo - 想办法把这个参数自动化
+    DividePara dividePara = {
+            .m_trainSampleNum = 648,
+            .m_testSampleNum = 216,
+            .m_featureDim = 401
+    };
+
+    MySvmClass mySvmClass(dividePara);  // 建立svm相关处理类
+    mySvmClass.GetSvmModel();               // 训练svm以得到svm模型
+    mySvmClass.predictSvm();                // 用测试集大体预测
+}
+
+/**
+ * @brief 单个Bin文件Demo演示具体实现代码
+ * @details 在图窗中输出微多普勒图像及特征曲线
+ */
+void OfflineFunctionClass::SingleBinProcess(std::string binFileNameStr)
+{
+    // 输出消息
+    wxLogMessage(wxT("请耐心等待结果输出 ... "));
+
+    // 雷达信号处理类相关变量初始设置
+    RadarParam *radarParam = new RadarParam;                          // RadarParam对象初始化
+    RadarDataCube *radarCube = new RadarDataCube(*radarParam);     // RadarDataCube对象初始化
+    int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];   // 初始化buff
+
+    std::vector<INT16>::iterator insertPos;                           // 设置初始复制位置
+    insertPos = radarCube->getFrame().begin();                        // 定义插入帧数据中的位置初始化
+
+    // 获取帧数 - totalFrame
+    std::ifstream ifs(binFileNameStr, std::ios::binary | std::ios::in);
+    if(!ifs.is_open())
+        return;
+    ifs.seekg(0, std::ios_base::end);
+    long long nFileLen = ifs.tellg();
+    long long totalFrame = nFileLen / radarParam->getFrameBytes();
+    // 文件指针回到开头
+    ifs.clear();                 // 文件指针重定位前对流状态标志进行清除操作
+    ifs.seekg(0,std::ios::beg);  // 文件指针重定位
+
+    bool m_mdMapDrawFlag = true;
+
+    int frameCount = totalFrame;
+    // 执行读取的文件
+    while (frameCount--)
+    {
+        ifs.read((char *) preBuf, radarParam->getFrameBytes());
+        std::copy_n(preBuf, radarParam->getFrameBytes() / 2, insertPos);
+
+        // 雷达数据处理
+        // 帧数据流存满 - 进行相应处理
+        radarCube->creatCube();
+        radarCube->creatRdm();
+
+        // 微多普勒图也进行更新
+        if (m_mdMapDrawFlag)
+        {
+            radarCube->setFlagForMap();
+            m_mdMapDrawFlag = false;
+        }
+
+        radarCube->updateStaticMicroMap(totalFrame);
+    }
+
+    // 所有处理结束后，会生成完整的微多普勒频谱，提取特征
+    std::vector<arma::rowvec> featureVec = radarCube->extractFeature();
+
+#ifndef NDEBUG
+    // cv::imshow("aa",radarCube->convertMdToStaticMap(totalFrame));
+    // cv::waitKey(0);
+#endif
+
+    int RdCols = radarCube->convertMdToStaticMap(totalFrame).cols, RdRows = radarCube->convertMdToStaticMap(totalFrame).rows;
+    // 使用malloc分配一块动态内存 - 目的在于独立出这块图的数据
+    void *RdData = malloc(3 * RdCols * RdRows);
+    memcpy(RdData, (void *) radarCube->convertMdToStaticMap(totalFrame).data, 3 * RdCols * RdRows);
+    wxImage *RdImage = new wxImage(RdCols, RdRows, (uchar *) RdData, false);
+
+    m_father->m_mdPic->SetBitmap(*RdImage,0,0,128,150);
+
+    m_father->m_mdWin->UpdateAll();
+    m_father->m_mdWin->Fit();
+
+
+#ifndef NDEBUG
+    featureVec[0].print();
+    std::cout << "-------------------------" << std::endl;
+    featureVec[1].print();
+    std::cout << "-------------------------" << std::endl;
+    featureVec[2].print();
+    std::cout << "-------------------------" << std::endl;
+#endif
+
+    // 进行绘制 - 设置三个特征矢量的y坐标
+    std::vector<double> vecCur1y, vecCur2y, vecCur3y;
+    arma::rowvec::iterator mIt = featureVec[0].begin();
+    arma::rowvec::iterator mIt_end = featureVec[0].end();
+    for (; mIt != mIt_end; mIt++)
+        vecCur1y.push_back(*mIt);
+
+    mIt = featureVec[1].begin();
+    mIt_end = featureVec[1].end();
+    for (; mIt != mIt_end; mIt++)
+        vecCur2y.push_back(*mIt);
+
+    mIt = featureVec[2].begin();
+    mIt_end = featureVec[2].end();
+    for (; mIt != mIt_end; mIt++)
+        vecCur3y.push_back(*mIt);
+    // 进行绘制 - 设置三个特征矢量的x坐标
+    std::vector<double> vecCur1x, vecCur2x, vecCur3x;
+    double timeRes = 0.03;
+    for (int p = 0; p < vecCur1y.size(); ++p)
+        vecCur1x.push_back(p*timeRes);
+
+    for (int p = 0; p < vecCur2y.size(); ++p)
+        vecCur2x.push_back(p*timeRes);
+
+    for (int p = 0; p < vecCur3y.size(); ++p)
+        vecCur3x.push_back(p);
+
+    m_father->m_torsoCurve->SetData(vecCur1x,vecCur1y);
+    m_father->m_torsoCurve->SetContinuity(true);
+    m_father->m_limbsCurve->SetData(vecCur2x,vecCur2y);
+    m_father->m_limbsCurve->SetContinuity(true);
+    m_father->m_vmdCurve->SetData(vecCur3x,vecCur3y);
+    m_father->m_vmdCurve->SetContinuity(true);
+
+    // 坐标轴相关更新
+    auto minMax1y = std::minmax_element(vecCur1y.begin(),vecCur1y.end());
+    auto minMax2y = std::minmax_element(vecCur2y.begin(),vecCur2y.end());
+    auto minMax3y = std::minmax_element(vecCur3y.begin(),vecCur3y.end());
+
+    m_father->m_torsoWin->Update();
+    m_father->m_torsoWin->Fit(-15*timeRes,vecCur1x.size()*timeRes,
+                    (*minMax1y.first)*1.5,(*minMax1y.second)*1.5);
+    m_father->m_limbsWin->Update();
+    m_father->m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,
+                    -(*minMax2y.second)*0.5,(*minMax2y.second)*1.5);
+    m_father->m_vmdWin->Update();
+    m_father->m_vmdWin->Fit(-15,vecCur3x.size(),
+                  (*minMax3y.first)*1.5,-(*minMax3y.first)*0.5);
+
+    // 关闭文件 + 释放内存
+    // 关闭文件
+    ifs.close();
+    // 释放内存
+    delete[] preBuf;
+    delete radarParam;
+    delete radarCube;
 }
