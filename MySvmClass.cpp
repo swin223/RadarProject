@@ -1,20 +1,15 @@
 #include "MySvmClass.h"
 
-/**
- * @brief MySvmClass构造函数
- * @param dividePara 数据集划分参数
- * @details 用数据集划分参数来进行有参构造
- */
 MySvmClass::MySvmClass(DividePara &dividePara)
 {
     m_dividePara = dividePara;
 }
 
-/**
- * @brief 初始化svm训练参数
- * @details 在生成svm的模型时所要传递的一个参数
- * @note 可修改，但是一般情况下默认调用即可
- */
+MySvmClass::~MySvmClass()
+{
+
+}
+
 void MySvmClass::InitParam()
 {
     m_svmParam.svm_type = C_SVC;
@@ -33,17 +28,14 @@ void MySvmClass::InitParam()
     m_svmParam.weight_label = NULL;
 }
 
-/**
- * @brief 读取已提取的训练集特征向量数据
- * @details 从用于存储训练集特征向量的txt文件中读取特征数据以及分类结果，用于svm模型的训练以及生成
- */
 void MySvmClass::ReadTrainFeatureData()
 {
     // 读取指定文件
-    std::ifstream trainIfs("../03_DataSet/trainData.txt",std::ios::in);
+    std::string fileName = "../03_DataSet/trainData.txt";
+    std::ifstream trainIfs(fileName, std::ios::in);
     if (!trainIfs.is_open())
     {
-        wxLogMessage(wxT("文件目录无此文件!"));
+        wxLogMessage(wxT("文件" + fileName + "找不到!"));
         return;
     }
     // 指定一个临时值用于给trainIfs逐个读取数据
@@ -75,17 +67,15 @@ void MySvmClass::ReadTrainFeatureData()
     trainIfs.close();
 }
 
-/**
- * @brief 读取已提取的测试集特征向量数据
- * @details 从用于存储测试集特征向量的txt文件中读取特征数据以及分类结果，用于对已生成的svm模型进行正确率大体检测
- */
 void MySvmClass::ReadTestFeatureData()
 {
+
+    std::string fileName = "../03_DataSet/testData.txt";
     // 读取指定文件
-    std::ifstream testIfs("../03_DataSet/testData.txt",std::ios::in);
+    std::ifstream testIfs(fileName, std::ios::in);
     if (!testIfs.is_open())
     {
-        wxLogMessage(wxT("文件目录无此文件!"));
+        wxLogMessage(wxT("文件" + fileName + "找不到!"));
         return;
     }
     // 指定一个临时值用于给testIfs逐个读取数据
@@ -117,11 +107,7 @@ void MySvmClass::ReadTestFeatureData()
     testIfs.close();
 }
 
-/**
- * @brief 生成svm模型
- * @details 将训练集整合后的规范输入结构体、svm超参数作为输入，输出svm模型
- */
-void MySvmClass::GetSvmModel()
+void MySvmClass::TrainSvmModel()
 {
     // 初始化相应的超参数
     InitParam();
@@ -168,10 +154,7 @@ void MySvmClass::GetSvmModel()
     delete[] m_svmProb.y;
 }
 
-/**
- * @brief 预测测试集数据
- * @details 用于大体预测svm的精度
- */
+
 void MySvmClass::predictSvm()
 {
     // 搜索保存的svm模型并打开
@@ -213,10 +196,4 @@ void MySvmClass::predictSvm()
     wxLogMessage(wxT(" ------------------------------------------ "));
 }
 
-/**
- * @brief MySvmClass析构函数
- */
-MySvmClass::~MySvmClass()
-{
 
-}

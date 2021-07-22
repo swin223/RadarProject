@@ -163,10 +163,10 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
     this->SetSizer(vBoxSizer);
 
     // 添加动态事件响应
-    Connect(ID_PAGE1_DCA1000, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::EnableDCA1000));
-    Connect(ID_PAGE1_UDPCT, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::ConnectUDP));
-    Connect(ID_PAGE1_AWR1642, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::EnableAWR1642));
-    Connect(ID_PAGE1_UDPDISCT, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::DisconnectUDP));
+    Connect(ID_PAGE1_DCA1000, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnEnableDCA1000Click));
+    Connect(ID_PAGE1_UDPCT, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnConnectUDPClick));
+    Connect(ID_PAGE1_AWR1642, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnEnableAWR1642Click));
+    Connect(ID_PAGE1_UDPDISCT, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnDisconnectUDPClick));
 
     /* -------------------------------------------------- 参数初始化 --------------------------------------------------- */
     // 摄像头捕获参数初始化
@@ -220,9 +220,9 @@ wxThread::ExitCode PacketProcessThread::Entry()
     // 线程自启动开始一直检查是否有包 - 有则处理无则等待
     while(!TestDestroy())
     {
-
         // 若包队列无UDP包数据
-        if(m_fatherPanel->m_packetQueue.empty()) continue;
+        if(m_fatherPanel->m_packetQueue.empty())
+            continue;
 
         // 以下情况 - 包队列有UDP包数据
         UINT8 * udpPacketPtr = m_fatherPanel->m_packetQueue.front();
@@ -263,7 +263,7 @@ wxThread::ExitCode PacketProcessThread::Entry()
 
         // 输出日志
         wxString outMessage;
-        outMessage.Printf(wxT(" 当前帧号 = %d ,  %d"),seqNum,m_udpPacketSeqFlag);
+        outMessage.Printf(wxT(" 当前帧号 = %d ,  %d"), seqNum, m_udpPacketSeqFlag);
         wxLogMessage(outMessage);
 
         // 普通处理
@@ -288,10 +288,10 @@ wxThread::ExitCode PacketProcessThread::Entry()
 
                 // 保存相应的数据到bin文件中
                 // 创建一个用于保存整数帧数据的data.bin文件 - 存在即使用append
-                wxFile saveDataFile("data.bin",wxFile::write_append);
+                wxFile saveDataFile("data.bin", wxFile::write_append);
                 // 使用wxFileOutputStream输出数据流 - 与创建出来的bin文件进行绑定
                 wxFileOutputStream dataToFile(saveDataFile);
-                dataToFile.Write(&(m_radarCube->getFrame()[0]),m_radarParam->getFrameBytes());
+                dataToFile.Write(&(m_radarCube->getFrame()[0]), m_radarParam->getFrameBytes());
 
                 // 雷达数据处理
                 // 帧数据流存满 - 进行相应处理
@@ -361,7 +361,7 @@ wxThread::ExitCode PacketProcessThread::Entry()
  * @brief wxOnlinePagePanel类 - EnableDCA1000函数
  * @param 触发事件
  */
-void wxOnlinePagePanel::EnableDCA1000(wxCommandEvent& event)
+void wxOnlinePagePanel::OnEnableDCA1000Click(wxCommandEvent& event)
 {
     // 输出消息重定位
     wxLogTextCtrl *console = new wxLogTextCtrl(m_logOutPut);
@@ -396,7 +396,7 @@ void wxOnlinePagePanel::EnableDCA1000(wxCommandEvent& event)
  * @brief wxOnlinePagePanel类 - ConnectUDP函数
  * @param 触发事件
  */
-void wxOnlinePagePanel::ConnectUDP(wxCommandEvent& event)
+void wxOnlinePagePanel::OnConnectUDPClick(wxCommandEvent& event)
 {
     // 定义一个IPV4地址类对象 - 绑定本地
     // DCA1000只将数据传到指定 IP + 端口
@@ -429,7 +429,7 @@ void wxOnlinePagePanel::ConnectUDP(wxCommandEvent& event)
  * @brief wxOnlinePagePanel类 - EnableAWR1642函数
  * @param 触发事件
  */
-void wxOnlinePagePanel::EnableAWR1642(wxCommandEvent& event)
+void wxOnlinePagePanel::OnEnableAWR1642Click(wxCommandEvent& event)
 {
     // 注释同上
     wxString exePath = wxGetCwd();
@@ -462,7 +462,7 @@ void wxOnlinePagePanel::EnableAWR1642(wxCommandEvent& event)
     // 用于处理Packet的子线程启动
     // bin回放开始 - 线程启动
     // 绑定事件
-    Connect(ID_PACKET_PROCESS,MY_PLOT_THREAD,wxMyPlotEventHandler(wxOnlinePagePanel::PacketThreadProcess));
+    Connect(ID_PACKET_PROCESS, MY_PLOT_THREAD, wxMyPlotEventHandler(wxOnlinePagePanel::OnReceivePacketProcessThreadEvent));
 
     m_packetProcessThread = new PacketProcessThread(this);
     if ( m_packetProcessThread->Create() != wxTHREAD_NO_ERROR )
@@ -479,7 +479,7 @@ void wxOnlinePagePanel::EnableAWR1642(wxCommandEvent& event)
  * @brief wxOnlinePagePanel类 - DisconnectUDP函数
  * @param 触发事件
  */
-void wxOnlinePagePanel::DisconnectUDP(wxCommandEvent& event)
+void wxOnlinePagePanel::OnDisconnectUDPClick(wxCommandEvent& event)
 {
     m_mySocket->Destroy();
     m_mySocket->Notify(false);
@@ -526,7 +526,7 @@ void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)
  * @brief wxOnlinePagePanel类 - PacketThreadProcess函数
  * @param 触发事件
  */
-void wxOnlinePagePanel::PacketThreadProcess(MyPlotEvent& event)
+void wxOnlinePagePanel::OnReceivePacketProcessThreadEvent(MyPlotEvent& event)
 {
     // 主线程实时绘图 - Range Doppler绘图
     m_rdPicPanel->SetImage(*event.GetOfflineRadarPic().first);
@@ -602,10 +602,10 @@ wxBinReplayPagePanel::wxBinReplayPagePanel(wxPanel *parent)
     this->SetSizer(vBoxSizer);
 
     // 添加动态事件响应
-    Connect(ID_PAGE2_RUN, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::ReplayRun));
-    Connect(ID_PAGE2_PAUSE, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::ReplayPause));
-    Connect(ID_PAGE2_RESUME, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::ReplayResume));
-    Connect(ID_PAGE2_END, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::ReplayEnd));
+    Connect(ID_PAGE2_RUN, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::OnReplayRunClick));
+    Connect(ID_PAGE2_PAUSE, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::OnReplayPauseClick));
+    Connect(ID_PAGE2_RESUME, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::OnReplayResumeClick));
+    Connect(ID_PAGE2_END, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::OnReplayEndClick));
 
     /* -------------------------------------------------- 参数初始化 -------------------------------------------------- */
 
@@ -635,8 +635,8 @@ void BinReplayThread::OnExit()
 wxThread::ExitCode BinReplayThread::Entry()
 {
     // 获取路径
-    std::string binFileNameStr = this->m_fatherPanel->m_binPathStr.ToStdString();
-    std::string videoFileNameStr = this->m_fatherPanel->m_videoPathStr.ToStdString();
+    std::string binFileNameStr = m_fatherPanel->m_binPathStr.ToStdString();
+    std::string videoFileNameStr = m_fatherPanel->m_videoPathStr.ToStdString();
     // avi频流地址
     cv::VideoCapture aviCapture(videoFileNameStr);
     // 用于暂存Video中的每一帧数据定义
@@ -644,11 +644,11 @@ wxThread::ExitCode BinReplayThread::Entry()
 
     // 离线数据 - 雷达信号处理类相关变量初始设置
     // todo - 可以设置为智能指针
-    RadarParam *radarParam = new RadarParam;                          // RadarParam对象初始化
-    RadarDataCube *radarCube = new RadarDataCube(*radarParam);   // RadarDataCube对象初始化
-    int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];   // 初始化buff
-    std::vector<INT16>::iterator insertPos;                           // 设置初始复制位置
-    insertPos = radarCube->getFrame().begin();                      // 定义插入帧数据中的位置初始化
+    RadarParam *radarParam = new RadarParam;                            // RadarParam对象初始化
+    RadarDataCube *radarCube = new RadarDataCube(*radarParam);          // RadarDataCube对象初始化
+    int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];     // 初始化buff
+    std::vector<INT16>::iterator insertPos;                             // 设置初始复制位置
+    insertPos = radarCube->getFrame().begin();                          // 定义插入帧数据中的位置初始化
 
     // 获取帧数 - totalFrame
     std::ifstream ifs(binFileNameStr,std::ios::binary | std::ios::in);
@@ -675,9 +675,9 @@ wxThread::ExitCode BinReplayThread::Entry()
         radarCube->creatRdm();
         int RdCols = radarCube->convertRdmToMap().cols, RdRows = radarCube->convertRdmToMap().rows;
         // 使用malloc分配一块动态内存 - 目的在于独立出这块图的数据
-        void *RdData = malloc(3 * RdCols * RdRows);
+        void* RdData = malloc(3 * RdCols * RdRows);
         memcpy(RdData, (void *) radarCube->convertRdmToMap().data, 3 * RdCols * RdRows);
-        wxImage *RdImage = new wxImage(RdCols, RdRows, (uchar *) RdData, false);
+        wxImage* RdImage = new wxImage(RdCols, RdRows, (uchar *) RdData, false);
 
         // 微多普勒图也进行更新
         if (m_mdMapDrawFlagOL)
@@ -691,7 +691,7 @@ wxThread::ExitCode BinReplayThread::Entry()
         // 使用malloc分配一块动态内存 - 目的在于独立出这块图的数据
         void *MdData = malloc(3 * MdCols * MdRows);
         memcpy(MdData, (void *) radarCube->convertMdToMap().data, 3 * MdCols * MdRows);
-        wxImage *MdImage = new wxImage(MdCols, MdRows, (uchar *) MdData, false);
+        wxImage* MdImage = new wxImage(MdCols, MdRows, (uchar *) MdData, false);
 
         // 读取保存的视频
         aviCapture >> singleFrameInBin;
@@ -700,14 +700,15 @@ wxThread::ExitCode BinReplayThread::Entry()
         // 使用malloc分配一块动态内存 - 目的在于独立出这块图的数据
         void *VideoData = malloc(3 * VideoCols * VideoRows);
         memcpy(VideoData, (void *) singleFrameInBin.data, 3 * VideoCols * VideoRows);
-        wxImage *VideoImage = new wxImage(VideoCols, VideoRows, (uchar *) VideoData, false);
+        wxImage* VideoImage = new wxImage(VideoCols, VideoRows, (uchar *) VideoData, false);
 
         // 两个图像矩阵处理结束，可以通知主线程进行绘制
         MyPlotEvent event( MY_PLOT_THREAD, ID_REPLAY_PROCESS );
-        event.SetOfflineImage(RdImage,MdImage,VideoImage);
+        event.SetOfflineImage(RdImage, MdImage, VideoImage);
 
         // 线程安全
-        wxQueueEvent( m_fatherPanel, event.Clone() );
+        // @todo 这里感觉不需要使用event.Clone 你放入队列的时候自动就克隆了，另外，复制指针几乎无工作量
+        wxQueueEvent(m_fatherPanel, event.Clone() );
     }
 
     // 关闭文件 + 释放内存
@@ -726,7 +727,7 @@ wxThread::ExitCode BinReplayThread::Entry()
  * @brief wxBinReplayPagePanel类 - bin回放开始函数
  * @param event 触发事件
  */
-void wxBinReplayPagePanel::ReplayRun(wxCommandEvent& event)
+void wxBinReplayPagePanel::OnReplayRunClick(wxCommandEvent& event)
 {
     // 输出消息重定位
     wxLog::SetActiveTarget(m_console);
@@ -753,7 +754,7 @@ void wxBinReplayPagePanel::ReplayRun(wxCommandEvent& event)
  * @brief wxBinReplayPagePanel类 - bin回放暂停函数
  * @param event 触发事件
  */
-void wxBinReplayPagePanel::ReplayPause(wxCommandEvent& event)
+void wxBinReplayPagePanel::OnReplayPauseClick(wxCommandEvent& event)
 {
     if (m_binReplayThread) // 线程是否仍旧存在
     {
@@ -768,7 +769,7 @@ void wxBinReplayPagePanel::ReplayPause(wxCommandEvent& event)
  * @brief wxBinReplayPagePanel类 - bin回放恢复函数
  * @param event 触发事件
  */
-void wxBinReplayPagePanel::ReplayResume(wxCommandEvent& event)
+void wxBinReplayPagePanel::OnReplayResumeClick(wxCommandEvent& event)
 {
     if (m_binReplayThread) // 线程是否仍旧存在
     {
@@ -783,7 +784,7 @@ void wxBinReplayPagePanel::ReplayResume(wxCommandEvent& event)
  * @brief wxBinReplayPagePanel类 - bin回放结束函数
  * @param event 触发事件
  */
-void wxBinReplayPagePanel::ReplayEnd(wxCommandEvent& event)
+void wxBinReplayPagePanel::OnReplayEndClick(wxCommandEvent& event)
 {
     if (m_binReplayThread) // 线程是否仍旧存在
     {
@@ -862,10 +863,10 @@ wxReplayFileDialog::wxReplayFileDialog(wxBinReplayPagePanel* parent,const wxStri
     this->SetSizer(vBoxSizer);
 
     // 链接响应事件
-    Connect(ID_BIN_PATH, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::setBinPath));
-    Connect(ID_VIDEO_PATH, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::setVideoPath));
-    Connect(ID_RESET, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::Reset));
-    Connect(ID_APPLY, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::Apply));
+    Connect(ID_BIN_PATH, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::OnSetBinPathClick));
+    Connect(ID_VIDEO_PATH, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::OnSetVideoPathClick));
+    Connect(ID_RESET, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::OnResetClick));
+    Connect(ID_APPLY, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::OnApplyClick));
 
     // 在屏幕中居中显示
     Centre();
@@ -877,7 +878,7 @@ wxReplayFileDialog::wxReplayFileDialog(wxBinReplayPagePanel* parent,const wxStri
  * @brief wxReplayFileDialog类 - setBinPath函数
  * @param event 触发事件
  */
-void wxReplayFileDialog::setBinPath(wxCommandEvent& event)
+void wxReplayFileDialog::OnSetBinPathClick(wxCommandEvent& event)
 {
     // 创建wxFileDialog类获取文件路径 - 用于在界面中显示
     wxFileDialog * openFileDialog = new wxFileDialog(this);
@@ -893,7 +894,7 @@ void wxReplayFileDialog::setBinPath(wxCommandEvent& event)
  * @brief wxReplayFileDialog类 - setVideoPath函数
  * @param event 触发事件
  */
-void wxReplayFileDialog::setVideoPath(wxCommandEvent& event)
+void wxReplayFileDialog::OnSetVideoPathClick(wxCommandEvent& event)
 {
     // 创建wxFileDialog类获取文件路径 - 用于在界面中显示
     wxFileDialog * openFileDialog = new wxFileDialog(this);
@@ -909,7 +910,7 @@ void wxReplayFileDialog::setVideoPath(wxCommandEvent& event)
  * @brief wxReplayFileDialog类 - Reset函数
  * @param event 触发事件
  */
-void wxReplayFileDialog::Reset(wxCommandEvent& event)
+void wxReplayFileDialog::OnResetClick(wxCommandEvent& event)
 {
     m_binPath->Clear();
     m_videoPath->Clear();
@@ -919,7 +920,7 @@ void wxReplayFileDialog::Reset(wxCommandEvent& event)
  * @brief wxReplayFileDialog类 - Apply函数
  * @param event 触发事件
  */
-void wxReplayFileDialog::Apply(wxCommandEvent& event)
+void wxReplayFileDialog::OnApplyClick(wxCommandEvent& event)
 {
     // 获取路径 - 用于代码
     m_father->m_binPathStr = m_binPath->GetValue();
@@ -1135,9 +1136,9 @@ wxOfflineDemoFileDialog::wxOfflineDemoFileDialog(wxOfflinePagePanel* parent,cons
     this->SetSizer(vBoxSizer);
 
     // 链接响应事件
-    Connect(ID_OFFLINE_BIN_PATH, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflineDemoFileDialog::setBinPath));
-    Connect(ID_OFFLINE_RESET, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflineDemoFileDialog::Reset));
-    Connect(ID_OFFLINE_APPLY, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflineDemoFileDialog::Apply));
+    Connect(ID_OFFLINE_BIN_PATH, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflineDemoFileDialog::OnSetBinPathClick));
+    Connect(ID_OFFLINE_RESET, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflineDemoFileDialog::OnResetClick));
+    Connect(ID_OFFLINE_APPLY, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflineDemoFileDialog::OnApplyClick));
 
     // 在屏幕中居中显示
     Centre();
@@ -1149,7 +1150,7 @@ wxOfflineDemoFileDialog::wxOfflineDemoFileDialog(wxOfflinePagePanel* parent,cons
  * @brief wxOfflineDemoFileDialog类 - setBinPath函数
  * @param event 触发事件
  */
-void wxOfflineDemoFileDialog::setBinPath(wxCommandEvent& event)
+void wxOfflineDemoFileDialog::OnSetBinPathClick(wxCommandEvent& event)
 {
     // 创建wxFileDialog类获取文件路径 - 用于在界面中显示
     wxFileDialog * openFileDialog = new wxFileDialog(this);
@@ -1165,7 +1166,7 @@ void wxOfflineDemoFileDialog::setBinPath(wxCommandEvent& event)
  * @brief wxOfflineDemoFileDialog类 - Reset函数
  * @param event 触发事件
  */
-void wxOfflineDemoFileDialog::Reset(wxCommandEvent& event)
+void wxOfflineDemoFileDialog::OnResetClick(wxCommandEvent& event)
 {
     m_binPath->Clear();
 }
@@ -1174,7 +1175,7 @@ void wxOfflineDemoFileDialog::Reset(wxCommandEvent& event)
  * @brief wxOfflineDemoFileDialog类 - Apply函数
  * @param event 触发事件
  */
-void wxOfflineDemoFileDialog::Apply(wxCommandEvent& event)
+void wxOfflineDemoFileDialog::OnApplyClick(wxCommandEvent& event)
 {
     // 获取路径 - 用于代码
     m_father->m_binPathStr = m_binPath->GetValue();
@@ -1524,16 +1525,16 @@ void OfflineFunctionClass::testSetProcess()
  */
 void OfflineFunctionClass::SvmPrediction()
 {
-    // todo - 想办法把这个参数自动化
+    // @todo - 想办法把这个参数自动化
     DividePara dividePara = {
-            .m_trainSampleNum = 648,
-            .m_testSampleNum = 216,
-            .m_featureDim = 401
+        .m_trainSampleNum = 648,
+        .m_testSampleNum = 216,
+        .m_featureDim = 401
     };
 
     MySvmClass mySvmClass(dividePara);  // 建立svm相关处理类
-    mySvmClass.GetSvmModel();               // 训练svm以得到svm模型
-    mySvmClass.predictSvm();                // 用测试集大体预测
+    mySvmClass.TrainSvmModel();         // 训练svm以得到svm模型
+    mySvmClass.predictSvm();            // 用测试集大体预测
 }
 
 /**

@@ -7,9 +7,7 @@
 #include "svm.h"
 #include "wx/wx.h"
 
-/**
- * @brief DividePara类
- * 数据集划分类
+/** 数据集划分类
  * @details 用于存储数据集中测试集/训练集个数及特征维度
  */
 struct DividePara
@@ -19,23 +17,50 @@ struct DividePara
     int m_featureDim;                   ///< 特征总维度
 };
 
-/**
- * @brief MySvmClass类
- * svm相关调用类
+/** 自定义svm类
  * @details 用于从训练集中得到svm模型,并可通过预测测试集来显示大体精度
  */
 class MySvmClass
 {
 public:
-    MySvmClass(DividePara &dividePara); ///< 构造函数
-    ~MySvmClass();                      ///< 析构函数
-    void GetSvmModel();                 ///< 生成svm模型
+
+    /** MySvmClass构造函数
+     * @param dividePara 数据集划分参数
+     * @details 用数据集划分参数来进行有参构造
+     */
+    MySvmClass(DividePara &dividePara);
+
+    /** 析构函数 */
+    ~MySvmClass();
+
+    /** 生成svm模型
+    * @details 将训练集整合后的规范输入结构体、svm超参数作为输入，输出svm模型
+    */
+    void TrainSvmModel();
+
+    /** 预测测试集数据
+    * @details 用于大体预测svm的精度
+    */
     void predictSvm();                  ///< 预测测试集数据
 
 private:
-    void InitParam();                   ///< 初始化svm训练参数
-    void ReadTrainFeatureData();        ///< 读取已提取的训练集特征向量数据
-    void ReadTestFeatureData();         ///< 读取已提取的测试集特征向量数据
+    /** 初始化svm训练参数
+     * @details 在生成svm的模型时所要传递的一个参数
+     * @note 可修改，但是一般情况下默认调用即可
+     */
+    void InitParam();
+
+    /** 读取已提取的训练集特征向量数据
+    * @details 从用于存储训练集特征向量的txt文件中读取特征数据以及分类结果，
+    * 用于svm模型的训练以及生成
+    */
+    void ReadTrainFeatureData();
+
+    /** 读取已提取的测试集特征向量数据
+     * @details 从用于存储测试集特征向量的txt文件中读取特征数据以及分类结果，
+     * 用于对已生成的svm模型进行正确率大体检测
+     */
+    void ReadTestFeatureData();
 
 private:
     DividePara m_dividePara;                 ///< 数据集划分参数
@@ -46,36 +71,5 @@ private:
     svm_parameter m_svmParam;                ///< svm超参
     svm_problem m_svmProb;                   ///< svm规范输入结构体(用于生成svmModel)
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif //MYSVMCLASS_H
