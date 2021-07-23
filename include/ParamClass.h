@@ -1,50 +1,51 @@
-#ifndef REALTIMECOMMUNICATION_PARAMCLASS_H
-#define REALTIMECOMMUNICATION_PARAMCLASS_H
+#ifndef PARAMCLASS_H
+#define PARAMCLASS_H
 
-#include<utility>
+#include <utility>
 
-/**
- * @brief RadarParam类
+/** RadarParam类
  * @details 单帧参数设定类
  */
 struct RadarParam
 {
-    /// 默认构造函数
+    /** 默认构造函数 */
     RadarParam()
         : m_adcSample(256),
           m_nChirp(128),
           m_nRx(4)
     {}
 
-    /// 含参构造函数
+    /** 含参构造函数 */
     RadarParam(const int nS, const int nC, const int nR)
         : m_adcSample(nS),
           m_nChirp(nC),
           m_nRx(nR)
     {}
 
-    unsigned long getFrameBytes() const;  ///< 获取单帧的字节
+    /** RadarParam类 - getFrameBytes函数
+    * @return 返回一帧数据的字节大小值
+    */
+    unsigned long getFrameBytes() const;
 
     int m_adcSample;                      ///< 采样个数
     int m_nChirp;                         ///< 扫频个数
     int m_nRx;                            ///< 天线个数
 };
 
-/**
- * @brief UdpPacketParam类
+/** UdpPacketParam类
  * @details UDP参数设定类
+ * @note 16bit - bufScale(2)  头10个包为信息包 - bufOffset(10)
  */
 struct UdpPacketParam
 {
-    // 16bit - bufScale(2)  头10个包为信息包 - bufOffset(10)
-    /// 默认构造函数
+    /** 默认构造函数 */
     UdpPacketParam()
         : m_bufSize(1466),
           m_bufScale(2),
           m_bufOffset(10)
     {}
 
-    /// 含参构造函数
+    /** 含参构造函数 */
     UdpPacketParam(const int bs, const int bsl, const int bo)
         : m_bufSize(bs),
           m_bufScale(bsl),
@@ -56,17 +57,22 @@ struct UdpPacketParam
     int m_bufOffset;                      ///< udp Packet的偏移量(正式数据)
 };
 
-/**
- * @brief ModifyFrame类
+/** ModifyFrame类
  * @details 参数修正类
  */
 class ModifyFrame
 {
 public:
-    /// 含参构造函数
+    /** ModifyFrame类 - 构造函数
+     * @param para 雷达参数对象
+     * @param frameLost 需要丢弃的帧数
+     * @param udpPara udp参数对象
+     */
     ModifyFrame(RadarParam &para, int frameLost, UdpPacketParam &udpPara);
 
-    /// 返回该丢弃的包和剩余字节数
+    /** ModifyFrame类 - getRightByte函数
+     * @return 返回该丢弃的包和剩余字节数的pair对
+     */
     std::pair<int,int> getRightByte() const;
 
 private:
@@ -76,4 +82,4 @@ private:
     int m_udpPackageOffset;                 ///< udp Packet的字节偏移
 };
 
-#endif //REALTIMECOMMUNICATION_PARAMCLASS_H
+#endif //PARAMCLASS_H

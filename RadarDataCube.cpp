@@ -1,10 +1,5 @@
-#include"RadarDataCube.h"
+#include "RadarDataCube.h"
 
-/**
- * @brief RadarDataCube类 - creatCube函数
- * @details 构建雷达数据立方体
- * @return 返回雷达数据立方体(Complex)
- */
 arma::cx_cube & RadarDataCube::creatCube()
 {
     // 转换成double类型的arma向量
@@ -23,12 +18,6 @@ arma::cx_cube & RadarDataCube::creatCube()
     return m_radarCube;
 }
 
-/**
- * @brief RadarDataCube类 - creatHanningCol
- * @details 创建纵向Hanning窗
- * @param length 创建纵向Hanning窗的长度
- * @return 纵向Hanning窗向量
- */
 arma::vec RadarDataCube::creatHanningCol(int length)
 {
     const double PI = 3.14159265359;
@@ -38,12 +27,6 @@ arma::vec RadarDataCube::creatHanningCol(int length)
     return hanWin;
 }
 
-/**
- * @brief RadarDataCube类 - creatHanningRow
- * @details 创建横向Hanning窗
- * @param length 创建横向Hanning窗的长度
- * @return 横向Hanning窗向量
- */
 arma::rowvec RadarDataCube::creatHanningRow(int length)
 {
     const double PI = 3.14159265359;
@@ -53,10 +36,6 @@ arma::rowvec RadarDataCube::creatHanningRow(int length)
     return hanWin;
 }
 
-/**
- * @brief RadarDataCube类 - creatRdm
- * @details 创建RDM矩阵
- */
 void RadarDataCube::creatRdm()
 {
     // 这个函数中只取RX0的数据
@@ -125,10 +104,6 @@ void RadarDataCube::creatRdm()
         (*it) = 10 * log10(1.0 + (*it));
 }
 
-/**
- * @brief RadarDataCube类 - updateMicroMap函数
- * @details 更新微多普勒图
- */
 void RadarDataCube::updateMicroMap()
 {
     int rowDiffDefault = 10;
@@ -177,13 +152,6 @@ void RadarDataCube::updateStaticMicroMap(long long frameCount)
     m_realTimeMdMap.col(m_realTimeMdMap.n_cols - 1) = rangeSumCol;
 }
 
-
-/**
- * @brief RadarDataCube类 - convertRdmToMap函数
- * @details 转换成Mat图
- * @note 并不会改变radarRdmReal
- * @return 返回Range Doppler Map矩阵 - cv::Mat
- */
 cv::Mat& RadarDataCube::convertRdmToMap()
 {
     // realTimeMdMap是实时微多普勒矩阵，数据不应该改变
@@ -220,12 +188,6 @@ cv::Mat& RadarDataCube::convertRdmToMap()
     return m_rdmMap;
 }
 
-/**
- * @brief RadarDataCube类 - convertMdToMap函数
- * @details 转换成微多普勒图
- * @note 并不会改变realTimeMdMap
- * @return 返回micro doppler矩阵 - cv::Mat
- */
 cv::Mat& RadarDataCube::convertMdToMap()
 {
     // realTimeMdMap是实时微多普勒矩阵，数据不应该改变
@@ -280,11 +242,6 @@ cv::Mat& RadarDataCube::convertMdToMap()
     return m_mdMap;
 }
 
-
-
-
-
-
 cv::Mat& RadarDataCube::convertMdToStaticMap(long long frameCount)
 {
     // realTimeMdMap是实时微多普勒矩阵，数据不应该改变
@@ -314,25 +271,6 @@ cv::Mat& RadarDataCube::convertMdToStaticMap(long long frameCount)
     return m_mdMap;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * @brief RadarDataCube类 - extractFeature函数
- * @details 从微多普勒频谱中提取相应的特征向量
- * @return 包含三大特征向量的行向量
- */
 std::vector<arma::rowvec> RadarDataCube::extractFeature()
 {
     auto microDoppler = m_realTimeMdMap;   // 遵循不改变原数据原则，生成临时变量
@@ -416,8 +354,3 @@ arma::vec RadarDataCube::readVelocity()
     ret = ret * velRes;                                   // 速度分辨率向量
     return ret;
 }
-
-
-
-
-

@@ -20,18 +20,17 @@ struct DividePara
 /** 自定义svm类
  * @details 用于从训练集中得到svm模型,并可通过预测测试集来显示大体精度
  */
-class MySvmClass
+class MySvm
 {
 public:
-
-    /** MySvmClass构造函数
+    /** MySvm构造函数
      * @param dividePara 数据集划分参数
      * @details 用数据集划分参数来进行有参构造
      */
-    MySvmClass(DividePara &dividePara);
+    MySvm(DividePara &dividePara);
 
     /** 析构函数 */
-    ~MySvmClass();
+    ~MySvm();
 
     /** 生成svm模型
     * @details 将训练集整合后的规范输入结构体、svm超参数作为输入，输出svm模型
@@ -41,7 +40,7 @@ public:
     /** 预测测试集数据
     * @details 用于大体预测svm的精度
     */
-    void predictSvm();                  ///< 预测测试集数据
+    void predictSvm();
 
 private:
     /** 初始化svm训练参数

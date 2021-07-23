@@ -1,31 +1,34 @@
-#ifndef REALTIMECOMMUNICATION_RADARDATACUBE_H
-#define REALTIMECOMMUNICATION_RADARDATACUBE_H
+#ifndef RADARDATACUBE_H
+#define RADARDATACUBE_H
 
 #include "ParamClass.h"
-#include<vector>
-#include<cstdint>
-#include<armadillo>
-#include<opencv2/imgproc/imgproc.hpp>
-#include<opencv2/core/core.hpp>
-#include<opencv2/highgui/highgui.hpp>
+#include <vector>
+#include <cstdint>
+#include <armadillo>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
-# define NDEBUG
+#define NDEBUG
 
-/**
- * @brief RadarDataCube类
- * @details 处理雷达帧数据流
+/** RadarDataCube类
+ * @details 处理雷达帧数据流，构建Range Doppler Map、
+ * 以及Micro Doppler Map
+ * @todo 可以将创建静态/动态微多普勒图和距离速度图用一个flag标识版本放在一起实现
  */
 class RadarDataCube
 {
 public:
-    // 构造函数相关
-    /// 默认构造函数
+    /** 默认构造函数 */
     RadarDataCube()
         : m_singleFrame(m_param.getFrameBytes() / 2),
           m_realTimeMapStart(false),
           m_frameCount(0)
     {}
-    /// 含参构造函数
+
+    /** 含参构造函数
+     * @param radarConf RadarParam类对象
+     */
     RadarDataCube(RadarParam &radarConf)
         : m_param(radarConf),
           m_singleFrame(m_param.getFrameBytes() / 2),
@@ -34,40 +37,90 @@ public:
     {}
 
     // 功能函数相关
-    /// 获得单帧数据流
+    /** 获取单帧数据流
+     * @return 整个单帧的数据流vector
+     */
     std::vector<int16_t> & getFrame()
     {
         return m_singleFrame;
     }
 
     // 转换函数相关
-    arma::cx_cube & creatCube();     ///< 构建数据立方体
-    void creatRdm();                 ///< 创建RDM
-    void setFlagForMap()             ///< 表示开始转化微多普勒图Flag
+    /** 构建雷达数据立方体
+     * @return 返回雷达数据立方体(Complex)
+     */
+    arma::cx_cube & creatCube();
+
+    /** 创建RDM矩阵
+     * @details RDM - Range Doppler Map
+     */
+    void creatRdm();
+
+    /** 将RDM矩阵转换成Mat
+     * @note 并不会改变radarRdmReal
+     * @return 返回Range Doppler Map矩阵 - cv::Mat
+     */
+    cv::Mat& convertRdmToMap();
+
+    /** 设置表示开始转化微多普勒图的Flag */
+    void setFlagForMap()
     {
         m_realTimeMapStart = true;
     }
-    void updateMicroMap();           ///< 更新微多普勒图
-    cv::Mat& convertRdmToMap();      ///< 转换成Mat图
-    cv::Mat& convertMdToMap();       ///< 转换成微多普勒图
 
-    std::vector<arma::rowvec> extractFeature();   ///< 从微多普勒图中抽取向量
-    arma::vec readVelocity();        // todo - 读取速度
+    /** 更新微多普勒图(动态)
+     * @details 用于Online Page、Replay Page得到实时更新的微多普勒图像
+     */
+    void updateMicroMap();
+
+    /** 更新微多普勒图(静态)
+    * @details 用于Offline Page得到静态的微多普勒图像
+    * @param frameCount 静态的微多普勒图像构建所需要的帧数
+    */
     void updateStaticMicroMap(long long frameCount);
+
+    /** 转换成微多普勒图(动态)
+     * @note 并不会改变realTimeMdMap
+     * @return 返回micro doppler矩阵 - cv::Mat
+     */
+    cv::Mat& convertMdToMap();
+
+    /** 转换成微多普勒图(静态)
+     * @param frameCount 静态的速度距离图构建所需要的帧数
+     * @return 返回micro doppler矩阵 - cv::Mat
+     */
     cv::Mat& convertMdToStaticMap(long long frameCount);
 
-
+    /** 从微多普勒频谱中提取相应的特征向量
+     * @return 包含三大特征向量的vector
+     */
+    std::vector<arma::rowvec> extractFeature();
 
 protected:
-    arma::vec creatHanningCol(int length);    ///< 创建hanning窗 - 纵向
-    arma::rowvec creatHanningRow(int length); ///< 创建hanning窗 - 横向
+    /** 创建纵向Hanning窗
+     * @param length 创建纵向Hanning窗的长度
+     * @return 纵向Hanning窗向量
+     */
+    arma::vec creatHanningCol(int length);
+
+    /** 创建横向Hanning窗
+     * @param length 创建横向Hanning窗的长度
+     * @return 横向Hanning窗向量
+     */
+    arma::rowvec creatHanningRow(int length);
+
+    /** 通过计算得到用于Range Bin对应的速度序列
+     * @details 得到用于Range Bin对应的速度序列来计算躯干特征矢量
+     * @return 速度序列(向量)
+     */
+    arma::vec readVelocity();
 
 protected:
     RadarParam m_param;                     ///< 雷达参数
     std::vector<int16_t> m_singleFrame;     ///< 单帧数据流
     arma::cx_cube m_radarCube;              ///< 雷达数据立方体
     arma::mat m_radarRdmReal;               ///< 雷达RDM
-    bool m_realTimeMapStart;
+    bool m_realTimeMapStart;                ///< 标志微多普勒图是否开始转换
     arma::mat m_realTimeMdMap;              ///< 实时微多普勒矩阵(待更新)
     cv::Mat m_rdmMap;                       ///< Map图
     cv::Mat m_mdMap;                        ///< 实时微多普勒矩阵(待更新)
@@ -76,25 +129,4 @@ protected:
     double m_globalMax;                     ///< 自适应图像参数 - 前N帧最大值
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#endif //REALTIMECOMMUNICATION_RADARDATACUBE_H
+#endif //RADARDATACUBE_H

@@ -1,16 +1,16 @@
 #include "MySvmClass.h"
 
-MySvmClass::MySvmClass(DividePara &dividePara)
+MySvm::MySvm(DividePara &dividePara)
 {
     m_dividePara = dividePara;
 }
 
-MySvmClass::~MySvmClass()
+MySvm::~MySvm()
 {
 
 }
 
-void MySvmClass::InitParam()
+void MySvm::InitParam()
 {
     m_svmParam.svm_type = C_SVC;
     m_svmParam.kernel_type = POLY;
@@ -28,7 +28,7 @@ void MySvmClass::InitParam()
     m_svmParam.weight_label = NULL;
 }
 
-void MySvmClass::ReadTrainFeatureData()
+void MySvm::ReadTrainFeatureData()
 {
     // 读取指定文件
     std::string fileName = "../03_DataSet/trainData.txt";
@@ -67,7 +67,7 @@ void MySvmClass::ReadTrainFeatureData()
     trainIfs.close();
 }
 
-void MySvmClass::ReadTestFeatureData()
+void MySvm::ReadTestFeatureData()
 {
 
     std::string fileName = "../03_DataSet/testData.txt";
@@ -107,7 +107,7 @@ void MySvmClass::ReadTestFeatureData()
     testIfs.close();
 }
 
-void MySvmClass::TrainSvmModel()
+void MySvm::TrainSvmModel()
 {
     // 初始化相应的超参数
     InitParam();
@@ -154,8 +154,7 @@ void MySvmClass::TrainSvmModel()
     delete[] m_svmProb.y;
 }
 
-
-void MySvmClass::predictSvm()
+void MySvm::predictSvm()
 {
     // 搜索保存的svm模型并打开
     wxLogMessage(wxT(" ------------------------------------------ "));
@@ -195,5 +194,3 @@ void MySvmClass::predictSvm()
     wxLogMessage(outMessage);
     wxLogMessage(wxT(" ------------------------------------------ "));
 }
-
-

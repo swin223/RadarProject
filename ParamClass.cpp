@@ -1,9 +1,5 @@
 #include "ParamClass.h"
 
-/**
- * @brief RadarParam类 - getFrameBytes函数
- * @return 返回一帧数据的字节大小值
- */
 unsigned long RadarParam::getFrameBytes() const
 {
     // IQ两个通道，每个通道16bit位的数据，因此2*2
@@ -11,12 +7,6 @@ unsigned long RadarParam::getFrameBytes() const
     return singleFrameBytes;
 }
 
-/**
- * @brief ModifyFrame类 - 构造函数
- * @param para 雷达参数对象
- * @param frameLost 需要丢弃的帧数
- * @param udpPara udp参数对象
- */
 ModifyFrame::ModifyFrame(RadarParam &para, int frameLost, UdpPacketParam &udpPara)
 {
     m_singleFrameBytes = para.getFrameBytes();
@@ -25,10 +15,6 @@ ModifyFrame::ModifyFrame(RadarParam &para, int frameLost, UdpPacketParam &udpPar
     m_udpPackageOffset = udpPara.m_bufOffset;
 }
 
-/**
- * @brief ModifyFrame类 - getRightByte函数
- * @return 返回该丢弃的包和剩余字节数的pair对
- */
 std::pair<int,int> ModifyFrame::getRightByte() const
 {
     std::pair<int,int> ret;
@@ -36,4 +22,3 @@ std::pair<int,int> ModifyFrame::getRightByte() const
     ret.second = m_singleFrameBytes*m_frameLost - ret.first*(m_udpPackageSize - m_udpPackageOffset);
     return ret;
 }
-

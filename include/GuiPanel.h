@@ -1,5 +1,5 @@
-#ifndef REALTIMECOMMUNICATION_GUIPANEL_H
-#define REALTIMECOMMUNICATION_GUIPANEL_H
+#ifndef GUIPANEL_H
+#define GUIPANEL_H
 
 #include <queue>
 #include <wx/dir.h>
@@ -10,37 +10,35 @@
 #include "wxImagePanel.h"
 #include "mathplot.h"
 #include "MySvmClass.h"
+#include "wx/msgqueue.h"
 
-/**
- * @brief 枚举定义
+/** 枚举定义
  * @details 定义所有用到的窗口标志符
  */
 enum {
-    ID_PAGE1_DCA1000 = 1000,  ///< 对应 Online Page - Run DCA1000按钮
-    ID_PAGE1_UDPCT,           ///< 对应 Online Page - UDP CONNECT按钮
-    ID_PAGE1_AWR1642,         ///< 对应 Online Page - RUN AWR1642按钮
-    ID_PAGE1_UDPDISCT,        ///< 对应 Online Page - UDP DISCONNECT按钮
-    PAGE1_SOCKET_ID,          ///< 对应 Online Page - socket事件
-    ID_PACKET_PROCESS,        ///< 对应 Online Page - 子线程Packet处理
-    ID_PAGE2_RUN,             ///< 对应 Replay Page - 子线程启动事件
-    ID_PAGE2_PAUSE,           ///< 对应 Replay Page - 子线程暂停事件
-    ID_PAGE2_RESUME,          ///< 对应 Replay Page - 子线程恢复事件
-    ID_PAGE2_END,             ///< 对应 Replay Page - 子线程结束事件
-    ID_REPLAY_PROCESS,        ///< 对应 Replay Page - GUI线程处理事件
-    ID_BIN_PATH,              ///< 对应 Replay Page - Dialog - 设置BIN路径事件
-    ID_VIDEO_PATH,            ///< 对应 Replay Page - Dialog - 设置VIDEO路径事件
-    ID_RESET,                 ///< 对应 Replay Page - Dialog - RESET事件
-    ID_APPLY,                 ///< 对应 Replay Page - Dialog - APPLY事件
-    ID_PAGE3_TRAIN,           ///< 对应 Offline Page - 训练集训练事件
-    ID_PAGE3_TEST,            ///< 对应 Offline Page - 测试集训练事件
-    ID_PAGE3_SVM,             ///< 对应 Offline Page - SVM Model产生事件
-    ID_PAGE3_DEMO,            ///< 对应 Offline Page - 单个Single演示事件
-    ID_OFFLINE_BIN_PATH,      ///< 对应 Offline Page - Dialog - 设置BIN路径事件
-    ID_OFFLINE_RESET,         ///< 对应 Offline Page - Dialog - RESET事件
-    ID_OFFLINE_APPLY          ///< 对应 Offline Page - Dialog - APPLY事件
+    ID_ONLINE_DCA1000 = 1000,  ///< 对应 Online Page - Run DCA1000按钮
+    ID_ONLINE_UDPCT,           ///< 对应 Online Page - UDP CONNECT按钮
+    ID_ONLINE_AWR1642,         ///< 对应 Online Page - RUN AWR1642按钮
+    ID_ONLINE_UDPDISCT,        ///< 对应 Online Page - UDP DISCONNECT按钮
+    ID_ONLINE_SOCKET,          ///< 对应 Online Page - socket事件
+    ID_ONLINE_PROCESS,         ///< 对应 Online Page - 子线程Packet处理
+    ID_REPLAY_RUN,             ///< 对应 Replay Page - 子线程启动事件
+    ID_REPLAY_PAUSE,           ///< 对应 Replay Page - 子线程暂停事件
+    ID_REPLAY_RESUME,          ///< 对应 Replay Page - 子线程恢复事件
+    ID_REPLAY_END,             ///< 对应 Replay Page - 子线程结束事件
+    ID_REPLAY_PROCESS,         ///< 对应 Replay Page - GUI线程处理事件
+    ID_REPLAY_BIN_PATH,        ///< 对应 Replay Page - Dialog - 设置BIN路径事件
+    ID_REPLAY_VIDEO_PATH,      ///< 对应 Replay Page - Dialog - 设置VIDEO路径事件
+    ID_REPLAY_RESET,           ///< 对应 Replay Page - Dialog - RESET事件
+    ID_REPLAY_APPLY,           ///< 对应 Replay Page - Dialog - APPLY事件
+    ID_OFFLINE_TRAIN,          ///< 对应 Offline Page - 训练集训练事件
+    ID_OFFLINE_TEST,           ///< 对应 Offline Page - 测试集训练事件
+    ID_OFFLINE_SVM,            ///< 对应 Offline Page - SVM Model产生事件
+    ID_OFFLINE_DEMO,           ///< 对应 Offline Page - 单个Single演示事件
+    ID_OFFLINE_BIN_PATH,       ///< 对应 Offline Page - Dialog - 设置BIN路径事件
+    ID_OFFLINE_RESET,          ///< 对应 Offline Page - Dialog - RESET事件
+    ID_OFFLINE_APPLY           ///< 对应 Offline Page - Dialog - APPLY事件
 };
-
-// @todo 上面这个ID的定义，名字很乱，建议统一，比如都是 ID_OFFLINE_XXX 我感觉用 ID_PAGEX_XXX这种没有前者方便查看
 
 /* ---------------------------------------------------- MyApp类 ---------------------------------------------------- */
 
@@ -48,6 +46,11 @@ enum {
 class MyApp : public wxApp
 {
 public:
+    /** MyApp程序入口函数
+     * @return bool类型
+     * @retval 1. true 运行成功
+     * @retval 2. false 运行失败
+     */
     bool OnInit() override;
 };
 
@@ -59,20 +62,25 @@ public:
 class MyFrame : public wxFrame
 {
 public:
-    // 构造函数
-    MyFrame(const wxString& title);      ///< 构造函数
+    /** 含参构造函数
+     * @param title 主窗口名字
+     */
+    MyFrame(const wxString& title);
 
     // 其他事件处理函数
-    void OnQuit(wxCommandEvent& event);  ///< 退出调用函数
-    void OnAbout(wxCommandEvent& event); ///< 关于调用函数
+    /** OnQuit退出调用函数
+     * @param event 触发事件
+     */
+    void OnQuit(wxCommandEvent& event);
 
-private :
-
+    /** OnAbout关于调用函数
+     * @param event 触发事件
+     */
+    void OnAbout(wxCommandEvent& event);
 };
 
 /* ------------------------------------------------------- Page 1 -----------------------------------------------------
  ------------------------------------------------- wxOnlinePagePanel类 ----------------------------------------------- */
-
 
 class MyPlotEvent;
 class PacketProcessThread;
@@ -83,20 +91,41 @@ class PacketProcessThread;
 class wxOnlinePagePanel : public wxPanel
 {
 public:
-
-    wxOnlinePagePanel(wxPanel *parent);         ///< 构造函数
+    /** 含参构造函数
+     * @param parent 父窗口指针
+     */
+    wxOnlinePagePanel(wxPanel *parent);
 
     // 按钮功能函数
-    void OnEnableDCA1000Click(wxCommandEvent& event);  ///< 启动DCA1000
-    void OnEnableAWR1642Click(wxCommandEvent& event);  ///< 启动AWR1642
-    void OnConnectUDPClick(wxCommandEvent& event);     ///< 进行UDP连接
-    void OnDisconnectUDPClick(wxCommandEvent& event);  ///< 断开UDP连接
+    /** 启动DCA1000
+     * @param 触发事件
+     */
+    void OnEnableDCA1000Click(wxCommandEvent& event);
 
-    // Socket触发函数
-    void OnSocketEvent(wxSocketEvent& event);   ///< UDP触发事件处理
+    /** 启动AWR1642
+     * @param 触发事件
+     */
+    void OnEnableAWR1642Click(wxCommandEvent& event);
 
-    // 子线程Packet处理后绘图线程函数
-    void OnReceivePacketProcessThreadEvent(MyPlotEvent& event); ///< 子线程函数-处理后绘图
+    /** 进行UDP连接
+     * @param 触发事件
+     */
+    void OnConnectUDPClick(wxCommandEvent& event);
+
+    /** 进行UDP断开
+     * @param 触发事件
+     */
+    void OnDisconnectUDPClick(wxCommandEvent& event);
+
+    /** Socket触发函数
+     * @param 触发事件
+     */
+    void OnSocketEvent(wxSocketEvent& event);
+
+    /** 子线程Packet处理后绘图线程函数
+     * @param 触发事件
+     */
+    void OnReceivePacketProcessThreadEvent(MyPlotEvent& event);
 
 public:
     // 摄像头捕获相关
@@ -104,9 +133,9 @@ public:
     std::string m_videoPath;           ///< 视频保存位置
     cv::VideoWriter *m_outputVideo;    ///< 保存输出的video
 
-    // 用于在子线程间传递数据
-    // @todo 这个类的操作有bug，不同线程在操作，一点保护机制都没有
-    std::queue<UINT8 *> m_packetQueue; ///< 用于给另一个线程处理的数据队列
+    // 使用wxMessageQueue用于在子线程间传递数据
+    /// 用于给另一个线程处理的数据队列
+    wxMessageQueue<UINT8 *> m_packetMsgQueue;
 
 private:
     // 窗口控件相关
@@ -134,12 +163,17 @@ private:
 class PacketProcessThread : public wxThread
 {
 public:
-    // 构造函数
-    PacketProcessThread(wxOnlinePagePanel *parent); ///< 构造函数
+    /** 含参构造函数
+     * @param parent 父窗口指针
+     */
+    PacketProcessThread(wxOnlinePagePanel *parent);
 
     // 线程启动入口与退出
-    virtual void *Entry();                          ///< 线程入口函数
-    virtual void OnExit();                          ///< 线程退出函数
+    /** 线程入口函数 */
+    virtual void *Entry();
+
+    /** 退出函数 */
+    virtual void OnExit();
 
 private:
     // 父窗口成员
@@ -174,17 +208,36 @@ class BinReplayThread;
 class wxBinReplayPagePanel : public wxPanel
 {
 public:
-
-    wxBinReplayPagePanel(wxPanel *parent);    ///<  构造函数，bin回放开始
+    /** 含参构造函数
+     * @param parent 父窗口指针
+     */
+    wxBinReplayPagePanel(wxPanel *parent);
 
     // 按钮功能函数
-    void OnReplayRunClick(wxCommandEvent& event);    ///< bin回放开始
-    void OnReplayPauseClick(wxCommandEvent& event);  ///< bin回放暂停
-    void OnReplayResumeClick(wxCommandEvent& event); ///< bin回放恢复
-    void OnReplayEndClick(wxCommandEvent& event);    ///< bin回放结束
+    /** bin回放开始函数
+     * @param event 触发事件
+     */
+    void OnReplayRunClick(wxCommandEvent& event);
 
-    // bin回放处理线程函数
-    void ReplayThreadProcess(MyPlotEvent& event);  ///< 子线程函数 - bin回放
+    /** bin回放暂停函数
+     * @param event 触发事件
+     */
+    void OnReplayPauseClick(wxCommandEvent& event);
+
+    /** bin回放恢复函数
+    * @param event 触发事件
+    */
+    void OnReplayResumeClick(wxCommandEvent& event);
+
+    /** bin回放结束函数
+     * @param event 触发事件
+     */
+    void OnReplayEndClick(wxCommandEvent& event);
+
+    /** bin回放处理线程函数
+     * @param event 触发事件
+     */
+    void ReplayThreadProcess(MyPlotEvent& event);
 
 public:
     // 离线的Bin文件和Video文件路径
@@ -203,24 +256,27 @@ private:
     BinReplayThread *m_binReplayThread;   ///< 子线程对象-用于重播文件
 };
 
-// @todo 在线程消息之间传递指针是一种不太安全的做法，除非你能保证一个线程来new对象，另外一个线程来delete对象，否则对象操作不安全
 /** 主要是用于在wxEVENTQUEUE存3个wxImage的指针 */
 class MyPlotEvent : public wxEvent
 {
 public:
-    /// 构造函数
+    /** 含参构造函数 */
     MyPlotEvent(wxEventType eventType, int id)
         : wxEvent(id, eventType)
     { }
 
-    /// 析构函数
+    /** 析构函数 */
     ~MyPlotEvent()
     {}
 
-    /// Clone函数
+    /** Clone函数 */
     virtual wxEvent *Clone() const { return new MyPlotEvent(*this); }
 
-    /// 用于存三个wxImage矩阵
+    /** 用于存三个wxImage矩阵
+     * @param RdMatrix 用于存Range-doppler Image的wxImage指针
+     * @param MdMatrix 用于存Micro-doppler Image的wxImage指针
+     * @param videoMatrix 用于存视频中的每一帧的wxImage指针
+     */
     void SetOfflineImage(wxImage* RdMatrix, wxImage* MdMatrix, wxImage* videoMatrix)
     {
         m_RdImage = RdMatrix;
@@ -228,13 +284,17 @@ public:
         m_videoImage = videoMatrix;
     }
 
-    /// 用于读两个Radar数据生成的wxImage矩阵
+    /** 用于读两个Radar数据生成的wxImage矩阵
+     * @return 用于存Range-doppler Image和Micro-doppler Image的wxImage指针的pair对
+     */
     std::pair<wxImage*, wxImage*> GetOfflineRadarPic()
     {
         return std::make_pair(m_RdImage, m_MdImage);
     }
 
-    /// 用于读取视频中的帧数据wxImage矩阵
+    /** 用于读取视频中的帧数据wxImage矩阵
+     * @return 用于存视频中的每一帧的wxImage指针
+     */
     wxImage* GetOfflineVideoPic()
     {
         return m_videoImage;
@@ -255,14 +315,33 @@ typedef void (wxEvtHandler::* MyPlotEventFunction)(MyPlotEvent&);
 class wxReplayFileDialog : public wxDialog
 {
 public:
-    // 构造函数
-    wxReplayFileDialog(wxBinReplayPagePanel* parent, const wxString& title); ///< 构造函数
+    /** 含参构造函数
+     * @param parent 父窗口指针
+     * @param title 窗口名称
+     */
+    wxReplayFileDialog(wxBinReplayPagePanel* parent, const wxString& title);
 
     // 事件处理函数
-    void OnSetBinPathClick(wxCommandEvent& event);   ///< 设置bin文件路径
-    void OnSetVideoPathClick(wxCommandEvent& event);        ///< 设置Video文件路径
-    void OnResetClick(wxCommandEvent& event);        ///< 重置文件路径
-    void OnApplyClick(wxCommandEvent& event);        ///< 应用文件路径
+    /** 设置bin文件路径
+     * @param event 触发事件
+     */
+    void OnSetBinPathClick(wxCommandEvent& event);
+
+    /** 设置Video文件路径
+     * @param event 触发事件
+     */
+    void OnSetVideoPathClick(wxCommandEvent& event);
+
+    /** 重置文件路径
+     * @param event 触发事件
+     */
+    void OnResetClick(wxCommandEvent& event);
+
+    /** 应用文件路径
+     * @brief wxReplayFileDialog类 - Apply函数
+     * @param event 触发事件
+     */
+    void OnApplyClick(wxCommandEvent& event);
 
 private:
     // 窗口控件相关
@@ -275,41 +354,66 @@ private:
 class BinReplayThread : public wxThread
 {
 public:
-    // 构造函数
-    BinReplayThread(wxBinReplayPagePanel* parent); ///< 构造函数
+    /** 含参构造函数
+    * @param parent 父窗口指针
+    */
+    BinReplayThread(wxBinReplayPagePanel* parent);
 
     // 线程启动入口和退出
-    virtual void* Entry();                         ///< 线程入口函数
-    virtual void OnExit();                         ///< 线程退出函数
+    /** 线程入口函数 */
+    virtual void* Entry();
+
+    /** 线程退出函数 */
+    virtual void OnExit();
 
 public:
     wxBinReplayPagePanel* m_fatherPanel;           ///< 父亲Panel指针
+
+    // @todo 下面这个变量的定义，md什么意思？OL什么意思，请在注释里面对应说清楚，或者把变量名字修改完整
     bool m_mdMapDrawFlagOL;                        ///< 表示开始绘制标志位
 };
 
 /* ------------------------------------------------------- Page 3 -----------------------------------------------------
  ------------------------------------------------- wxOfflinePagePanel类 --------------------------------------------- */
 
-/**
- * @brief wxOfflinePagePanel类
- * 微多普勒离线数据处理类
+/** 微多普勒离线数据处理类
  * @details 主要是用于在Frame下的Page3的布局和功能实现
  */
 class wxOfflinePagePanel : public wxPanel
 {
-    friend class OfflineFunctionClass;            // 定义友元类(用以访问图窗)
+    // 定义友元类(用以访问图窗)
+    friend class OfflineFunction;
 public:
-    // 构造函数
-    wxOfflinePagePanel(wxPanel *parent);          ///< 构造函数
+    /** 含参构造函数
+     * @param parent 父窗口指针
+     */
+    wxOfflinePagePanel(wxPanel *parent);
 
     // 按钮功能函数
-    void TrainDataSet(wxCommandEvent& event);     ///< 训练数据集
-    void TestDataSet(wxCommandEvent& event);      ///< 训练测试集
-    void SvmModel(wxCommandEvent& event);         ///< SVM模型训练
-    void SingleBinDemo(wxCommandEvent& event);    ///< 单个Bin文件Demo演示
+    /** 训练数据集
+     * @param event 触发事件
+     */
+    void TrainDataSet(wxCommandEvent& event);
 
-    // 其他函数
-    void refreshAll(arma::rowvec&, wxBitmap&);    ///< 所有图更新
+    /** 训练测试集
+     * @param event 触发事件
+     */
+    void TestDataSet(wxCommandEvent& event);
+
+    /** SVM模型训练
+     * @param event 触发事件
+     */
+    void SvmModel(wxCommandEvent& event);
+
+    /** 单个Bin文件Demo
+     * @param event 触发事件
+     */
+    void SingleBinDemo(wxCommandEvent& event);
+
+    /** 所有图更新
+     * @note 目前尚未使用
+     */
+    void refreshAll(arma::rowvec&, wxBitmap&);
 
 public:
     // 离线的Bin文件和
@@ -322,24 +426,23 @@ private:
     mpWindow *m_mdWin,*m_torsoWin,*m_limbsWin,*m_vmdWin;   ///< 曲线图窗
     mpFXYVector *m_torsoCurve,*m_limbsCurve,*m_vmdCurve;   ///< 三个曲线layer
     mpBitmapLayer *m_mdPic;                                ///< 一个图layer
-
-    // 两个分离式进程
-    // @todo 这里的注释多余了？还是有别的进程代码没写？
 };
 
 /** 线程类要处理的训练集和数据集的大量文件提取(为了不卡死主线程) */
 class FeatureExtraThread : public wxThread
 {
 public:
-
-    /** 构造函数
-     * @param parent 窗口对象作为消息的发送目的地
+    /** 含参构造函数
+     * @param parent 父窗口指针
      */
     FeatureExtraThread(wxOfflinePagePanel *parent);
 
     // 线程启动入口和退出
-    virtual void* Entry();                            ///< 线程入口函数
-    virtual void OnExit();                            ///< 线程退出函数
+    /** 线程入口函数 */
+    virtual void* Entry();
+
+    /** 线程退出函数 */
+    virtual void OnExit();
 
 public:
     wxOfflinePagePanel* m_fatherPanel;                ///< 父亲Panel指针
@@ -350,17 +453,27 @@ public:
 class wxOfflineDemoFileDialog : public wxDialog
 {
 public:
-
-    /** 构造函数
-     * @param parent 窗口对象作为消息的发送目的地
-     * @param title 窗口的标题
+    /** 含参构造函数
+     * @param parent 父窗口指针
+     * @param title 窗口名称
      */
     wxOfflineDemoFileDialog(wxOfflinePagePanel* parent, const wxString& title);
 
     // 事件处理函数
-    void OnSetBinPathClick(wxCommandEvent& event);   ///< 设置bin文件路径
-    void OnResetClick(wxCommandEvent& event);        ///< 重置文件路径
-    void OnApplyClick(wxCommandEvent& event);        ///< 应用文件路径
+    /** 设置bin文件路径
+     * @param event 触发事件
+     */
+    void OnSetBinPathClick(wxCommandEvent& event);
+
+    /** 重置文件路径
+     * @param event 触发事件
+     */
+    void OnResetClick(wxCommandEvent& event);
+
+    /** 应用文件路径
+     * @param event 触发事件
+     */
+    void OnApplyClick(wxCommandEvent& event);
 
 private:
     // 窗口控件相关
@@ -369,25 +482,58 @@ private:
 };
 
 /** 实现Offline Page下的所有功能 */
-class OfflineFunctionClass
+// @todo 一般来说，在类的定义名字中，不出现Class这个字眼，请全文修改
+class OfflineFunction
 {
 public:
-    /// 构造函数
-    OfflineFunctionClass(wxOfflinePagePanel *parent);
+    /** 含参构造函数
+     * @param parent 父窗口指针
+     */
+    OfflineFunction(wxOfflinePagePanel *parent);
 
-    void GetFileNamesAndTag();               ///< 获取文件夹下的全文件名以及对应的分类
-    void trainSetProcess();                  ///< 训练集处理 (提取特征 + 标准化(输出最大最小值文件) + 输出)
-    void testSetProcess();                   ///< 测试集处理 (提取特征 + 标准化(按最大最小值文件标准化) + 输出)
-    void SvmPrediction();                    ///< svm预测精度
-    /// 单个Bin文件Demo演示具体实现
+    /** 获取文件夹下的全文件名以及对应的分类
+     * @details 为后续训练集和测试集bin文件读取及提取特征做预备
+     */
+    void GetFileNamesAndTag();
+
+    /** 训练集处理
+     * @details 提取特征 + 得到标准化最大最小值文件(用于测试集处理) + 输出
+     */
+     // @todo 我们统一一下，凡是自己设计的类，成员函数的首字母大写，比如，下面这个改成： TrainSetProcess，全文其他地方也类似修改掉
+    void trainSetProcess();
+
+    /** 测试集处理
+     * @details 提取特征 + 标准化(按最大最小值文件标准化) + 输出
+     */
+    void testSetProcess();
+
+    /** svm预测精度
+     * @details 通过读取testData.txt和trainData.txt完成svm模型创建及输出
+     */
+    void SvmPrediction();
+
+    /** 单个Bin文件Demo演示具体实现代码
+     * @details 在图窗中输出微多普勒图像及特征曲线
+     */
     void SingleBinProcess(std::string binFileNameStr);
 
 private:
-    /// 训练集数据集数据标准化
+    /** 训练集数据集数据标准化
+     * @param sampleFeatureMat 训练集的特征值矩阵
+     * @details 对训练集中提取的特征数据进行数据标准化，会输出一个最大最小值文件来用于对测试集也进行标准化
+     */
     void trainSetNormalized(arma::mat &sampleFeatureMat);
-    /// 测试集数据集数据标准化
+
+    /** 测试集数据集数据标准化
+     * @param sampleFeatureMat 测试集的特征值矩阵
+     * @details 对测试集中提取的特征数据进行数据标准化，会读取训练集标准化后输出的一个最大最小值文件来用于对测试集进行标准化
+     */
     void testSetNormalized(arma::mat &sampleFeatureMat);
-    /// 输出特征文件(.txt)
+
+    /** 用于输出特征值数据到txt文件
+     * @param sampleFeatureMat 训练集/测试集特征值矩阵
+     * @param outputFileName 输出的文件名
+     */
     void printFeatureData(arma::mat& sampleFeatureMat,const std::string& outputFileName);
 
 private:
@@ -399,4 +545,4 @@ private:
 
 // todo - 一些new出来的要去清理
 
-#endif //REALTIMECOMMUNICATION_GUIPANEL_H
+#endif //GUIPANEL_H

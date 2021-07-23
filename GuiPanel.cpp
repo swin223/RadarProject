@@ -9,12 +9,6 @@
 /* ----------------------------------------------------- 实现App ----------------------------------------------------- */
 IMPLEMENT_APP(MyApp)
 
-/**
- * @brief MyApp程序入口函数
- * @return bool类型
- * @retval 1. true 运行成功
- * @retval 2. false 运行失败
- */
 bool MyApp::OnInit()
 {
     MyFrame *frame = new MyFrame(wxT("Real-Time Communication"));
@@ -23,11 +17,6 @@ bool MyApp::OnInit()
 }
 
 /* ---------------------------------------------------- MyFrame类 ---------------------------------------------------- */
-
-/**
- * @brief MyFrame类 - 构造函数
- * @param title 主窗口名字
- */
 MyFrame::MyFrame(const wxString& title)
     : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(1400, 800))
 {
@@ -84,20 +73,12 @@ MyFrame::MyFrame(const wxString& title)
     Centre();
 }
 
-/**
- * @brief MyFrame类 - OnQuit函数
- * @param event 触发事件
- */
 void MyFrame::OnQuit(wxCommandEvent& event)
 {
     // 释放主窗口
     Close();
 }
 
-/**
- * @brief MyFrame类 - OnAbout函数
- * @param event 触发事件
- */
 void MyFrame::OnAbout(wxCommandEvent& event)
 {
     // 产生消息框
@@ -111,23 +92,19 @@ void MyFrame::OnAbout(wxCommandEvent& event)
 
 // wxOnlinePagePanel类私有事件声明表
 BEGIN_EVENT_TABLE(wxOnlinePagePanel,wxPanel)
-    EVT_SOCKET(PAGE1_SOCKET_ID, wxOnlinePagePanel::OnSocketEvent)
+    EVT_SOCKET(ID_ONLINE_SOCKET, wxOnlinePagePanel::OnSocketEvent)
 END_EVENT_TABLE()
 
-/**
- * @brief wxOnlinePagePanel类 - 构造函数
- * @param parent 父窗口指针
- */
 wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
     : wxPanel(parent)
 {
     /* ---------------------------------------------- 控件设定 + 页面布局 ----------------------------------------------- */
     // 按钮
     m_logOutPut = new wxTextCtrl(this, wxID_ANY, wxT(""),wxPoint(-1, -1), wxSize(-1, -1), wxTE_MULTILINE);
-    wxButton *btDca1000 = new wxButton(this, ID_PAGE1_DCA1000, wxT("RUN DCA1000"),wxDefaultPosition,wxSize(150,30));
-    wxButton *btUdpConnect = new wxButton(this, ID_PAGE1_UDPCT, wxT("UDP CONNECT"),wxDefaultPosition,wxSize(150,30));
-    wxButton *btAwr1642 = new wxButton(this, ID_PAGE1_AWR1642, wxT("RUN AWR1642"),wxDefaultPosition,wxSize(150,30));
-    wxButton *btUdpDisconnect = new wxButton(this, ID_PAGE1_UDPDISCT, wxT("UDP DISCONNECT"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btDca1000 = new wxButton(this, ID_ONLINE_DCA1000, wxT("RUN DCA1000"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btUdpConnect = new wxButton(this, ID_ONLINE_UDPCT, wxT("UDP CONNECT"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btAwr1642 = new wxButton(this, ID_ONLINE_AWR1642, wxT("RUN AWR1642"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btUdpDisconnect = new wxButton(this, ID_ONLINE_UDPDISCT, wxT("UDP DISCONNECT"),wxDefaultPosition,wxSize(150,30));
     wxStaticBox *sBox = new wxStaticBox(this,wxID_ANY,wxT("Function Button"));
     // 图窗和静态文本
     m_rdPicPanel = new wxImagePanel(this);
@@ -163,10 +140,10 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
     this->SetSizer(vBoxSizer);
 
     // 添加动态事件响应
-    Connect(ID_PAGE1_DCA1000, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnEnableDCA1000Click));
-    Connect(ID_PAGE1_UDPCT, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnConnectUDPClick));
-    Connect(ID_PAGE1_AWR1642, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnEnableAWR1642Click));
-    Connect(ID_PAGE1_UDPDISCT, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnDisconnectUDPClick));
+    Connect(ID_ONLINE_DCA1000, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnEnableDCA1000Click));
+    Connect(ID_ONLINE_UDPCT, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnConnectUDPClick));
+    Connect(ID_ONLINE_AWR1642, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnEnableAWR1642Click));
+    Connect(ID_ONLINE_UDPDISCT, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnDisconnectUDPClick));
 
     /* -------------------------------------------------- 参数初始化 --------------------------------------------------- */
     // 摄像头捕获参数初始化
@@ -178,10 +155,6 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
     m_udpParam = new UdpPacketParam;                       // UdpPacketParam对象初始化
 }
 
-/**
- * @brief PacketProcessThread类 - 构造函数
- * @param parent 父窗口指针
- */
 PacketProcessThread::PacketProcessThread(wxOnlinePagePanel *parent) : wxThread(wxTHREAD_DETACHED)
 {
     // 父窗口成员
@@ -204,30 +177,29 @@ PacketProcessThread::PacketProcessThread(wxOnlinePagePanel *parent) : wxThread(w
     m_singleFramePic = new cv::Mat;                       // 摄像头捕捉的单帧初始化
 }
 
-/**
- * @brief PacketProcessThread类 - 退出函数
- */
 void PacketProcessThread::OnExit()
 {
 
 }
 
-/**
- * @brief PacketProcessThread类 - 线程启动函数
- */
 wxThread::ExitCode PacketProcessThread::Entry()
 {
     // 线程自启动开始一直检查是否有包 - 有则处理无则等待
     while(!TestDestroy())
     {
-        // 若包队列无UDP包数据
-        if(m_fatherPanel->m_packetQueue.empty())
+        // 定义用于接收的指针
+        UINT8* udpPacketPtr = nullptr;
+        // 这里看了下Receive和ReceiveTimeOut的区别
+        // Receive是阻塞的，一直等到队列中有可用数据，ReceiveTimeOut第一个参数设置为0后可以无阻塞调用
+        wxMessageQueueError ret = m_fatherPanel->m_packetMsgQueue.ReceiveTimeout(0,udpPacketPtr);
+
+        // 如果是超时事件，就跳过后续代码，继续等待
+        if(ret == wxMSGQUEUE_TIMEOUT)
+        {
             continue;
+        }
 
         // 以下情况 - 包队列有UDP包数据
-        UINT8 * udpPacketPtr = m_fatherPanel->m_packetQueue.front();
-        m_fatherPanel->m_packetQueue.pop();
-
         // 由于是小端模式输入，seqNum表示序号 - 只取前两个
         unsigned long seqNum = udpPacketPtr[0] + udpPacketPtr[1] * 256;
 
@@ -335,11 +307,11 @@ wxThread::ExitCode PacketProcessThread::Entry()
                 wxImage *VideoImage = new wxImage(VideoCols, VideoRows, (uchar *) VideoData, false);
 
                 // 两个图像矩阵处理结束，可以通知主线程进行绘制
-                MyPlotEvent event( MY_PLOT_THREAD, ID_PACKET_PROCESS );
-                event.SetOfflineImage(RdImage,MdImage,VideoImage);
+                MyPlotEvent* event = new MyPlotEvent( MY_PLOT_THREAD, ID_ONLINE_PROCESS );
+                event->SetOfflineImage(RdImage,MdImage,VideoImage);
 
                 // 线程安全
-                wxQueueEvent( m_fatherPanel, event.Clone() );
+                wxQueueEvent( m_fatherPanel, event);
 
                 // 一帧结束，重新设置insertPos 并把剩余的数据复制到帧数据流中存储
                 m_insertPos = m_radarCube->getFrame().begin();
@@ -357,10 +329,6 @@ wxThread::ExitCode PacketProcessThread::Entry()
     return (wxThread::ExitCode)0;
 }
 
-/**
- * @brief wxOnlinePagePanel类 - EnableDCA1000函数
- * @param 触发事件
- */
 void wxOnlinePagePanel::OnEnableDCA1000Click(wxCommandEvent& event)
 {
     // 输出消息重定位
@@ -392,10 +360,6 @@ void wxOnlinePagePanel::OnEnableDCA1000Click(wxCommandEvent& event)
     wxExecute(filePath, wxEXEC_ASYNC | wxEXEC_SHOW_CONSOLE, proc, &env);
 }
 
-/**
- * @brief wxOnlinePagePanel类 - ConnectUDP函数
- * @param 触发事件
- */
 void wxOnlinePagePanel::OnConnectUDPClick(wxCommandEvent& event)
 {
     // 定义一个IPV4地址类对象 - 绑定本地
@@ -418,17 +382,13 @@ void wxOnlinePagePanel::OnConnectUDPClick(wxCommandEvent& event)
 
     // 设置UDP Socket
     // 将事件处理器和事件标志符SOCKET_ID绑定
-    m_mySocket->SetEventHandler(*this, PAGE1_SOCKET_ID);
+    m_mySocket->SetEventHandler(*this, ID_ONLINE_SOCKET);
     // 定义的这个UDP socket只是用来接收的
     m_mySocket->SetNotify(wxSOCKET_INPUT_FLAG);
     // 监听wxSOCKET_INPUT_FLAG事件
     m_mySocket->Notify(true);
 }
 
-/**
- * @brief wxOnlinePagePanel类 - EnableAWR1642函数
- * @param 触发事件
- */
 void wxOnlinePagePanel::OnEnableAWR1642Click(wxCommandEvent& event)
 {
     // 注释同上
@@ -462,7 +422,7 @@ void wxOnlinePagePanel::OnEnableAWR1642Click(wxCommandEvent& event)
     // 用于处理Packet的子线程启动
     // bin回放开始 - 线程启动
     // 绑定事件
-    Connect(ID_PACKET_PROCESS, MY_PLOT_THREAD, wxMyPlotEventHandler(wxOnlinePagePanel::OnReceivePacketProcessThreadEvent));
+    Connect(ID_ONLINE_PROCESS, MY_PLOT_THREAD, wxMyPlotEventHandler(wxOnlinePagePanel::OnReceivePacketProcessThreadEvent));
 
     m_packetProcessThread = new PacketProcessThread(this);
     if ( m_packetProcessThread->Create() != wxTHREAD_NO_ERROR )
@@ -475,10 +435,6 @@ void wxOnlinePagePanel::OnEnableAWR1642Click(wxCommandEvent& event)
     wxLogMessage(wxT("Run - Bin File Data Replay!"));
 }
 
-/**
- * @brief wxOnlinePagePanel类 - DisconnectUDP函数
- * @param 触发事件
- */
 void wxOnlinePagePanel::OnDisconnectUDPClick(wxCommandEvent& event)
 {
     m_mySocket->Destroy();
@@ -489,10 +445,6 @@ void wxOnlinePagePanel::OnDisconnectUDPClick(wxCommandEvent& event)
     m_packetProcessThread->Delete();    // 子线程关闭
 }
 
-/**
- * @brief wxOnlinePagePanel类 - OnSocketEvent函数
- * @param 触发事件
- */
 void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)
 {
     // 事件类型触发
@@ -510,7 +462,7 @@ void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)
         // 从socket缓存中读取1466字节udp数据(一个包的大小)到buf
         m_mySocket->Read(singleUdpBufPtr, m_udpParam->m_bufSize);
 
-        m_packetQueue.push(singleUdpBufPtr);
+        m_packetMsgQueue.Post(singleUdpBufPtr);
 
         // 上面wxSOCKET_LOST_FLAG 用以失去所有flag的bit位信息表示事件不触发
         // 现在要重新SetNotify wxSOCKET_INPUT_FLAG表示现在又要对socket数据缓存区的数据进行处理
@@ -522,10 +474,6 @@ void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)
     }
 }
 
-/**
- * @brief wxOnlinePagePanel类 - PacketThreadProcess函数
- * @param 触发事件
- */
 void wxOnlinePagePanel::OnReceivePacketProcessThreadEvent(MyPlotEvent& event)
 {
     // 主线程实时绘图 - Range Doppler绘图
@@ -550,21 +498,16 @@ void wxOnlinePagePanel::OnReceivePacketProcessThreadEvent(MyPlotEvent& event)
 
 /* ----------------------------------------------------- Page 2 ------------------------------------------------------
  ----------------------------------------------- wxBinReplayPagePanel类 --------------------------------------------- */
-
-/**
- * @brief wxBinReplayPagePanel类 - 构造函数
- * @param parent 父窗口指针
- */
 wxBinReplayPagePanel::wxBinReplayPagePanel(wxPanel *parent)
     : wxPanel(parent)
 {
     /* ---------------------------------------------- 控件设定 + 页面布局 ----------------------------------------------- */
     // 按钮
     m_logOutPut = new wxTextCtrl(this, wxID_ANY, wxT(""),wxPoint(-1, -1), wxSize(-1, -1), wxTE_MULTILINE);
-    wxButton *btRun = new wxButton(this, ID_PAGE2_RUN, wxT("RUN"),wxDefaultPosition,wxSize(150,30));
-    wxButton *btPause = new wxButton(this, ID_PAGE2_PAUSE, wxT("PAUSE"),wxDefaultPosition,wxSize(150,30));
-    wxButton *btResume = new wxButton(this, ID_PAGE2_RESUME, wxT("RESUME"),wxDefaultPosition,wxSize(150,30));
-    wxButton *btEnd = new wxButton(this, ID_PAGE2_END, wxT("END"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btRun = new wxButton(this, ID_REPLAY_RUN, wxT("RUN"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btPause = new wxButton(this, ID_REPLAY_PAUSE, wxT("PAUSE"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btResume = new wxButton(this, ID_REPLAY_RESUME, wxT("RESUME"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btEnd = new wxButton(this, ID_REPLAY_END, wxT("END"),wxDefaultPosition,wxSize(150,30));
     wxStaticBox *sBox = new wxStaticBox(this,wxID_ANY,wxT("Function Button"));
     // 输出log信息
     m_console = new wxLogTextCtrl(m_logOutPut);
@@ -602,36 +545,26 @@ wxBinReplayPagePanel::wxBinReplayPagePanel(wxPanel *parent)
     this->SetSizer(vBoxSizer);
 
     // 添加动态事件响应
-    Connect(ID_PAGE2_RUN, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::OnReplayRunClick));
-    Connect(ID_PAGE2_PAUSE, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::OnReplayPauseClick));
-    Connect(ID_PAGE2_RESUME, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::OnReplayResumeClick));
-    Connect(ID_PAGE2_END, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::OnReplayEndClick));
+    Connect(ID_REPLAY_RUN, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::OnReplayRunClick));
+    Connect(ID_REPLAY_PAUSE, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::OnReplayPauseClick));
+    Connect(ID_REPLAY_RESUME, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::OnReplayResumeClick));
+    Connect(ID_REPLAY_END, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxBinReplayPagePanel::OnReplayEndClick));
 
     /* -------------------------------------------------- 参数初始化 -------------------------------------------------- */
 
 }
 
-/**
- * @brief BinReplayThread类 - 构造函数
- * @param parent 父窗口指针
- */
 BinReplayThread::BinReplayThread(wxBinReplayPagePanel *parent) : wxThread(wxTHREAD_DETACHED)
 {
     m_fatherPanel = parent;
     m_mdMapDrawFlagOL = true;
 }
 
-/**
- * @brief BinReplayThread类 - 退出函数
- */
 void BinReplayThread::OnExit()
 {
 
 }
 
-/**
- * @brief BinReplayThread类 - 启动函数
- */
 wxThread::ExitCode BinReplayThread::Entry()
 {
     // 获取路径
@@ -703,12 +636,11 @@ wxThread::ExitCode BinReplayThread::Entry()
         wxImage* VideoImage = new wxImage(VideoCols, VideoRows, (uchar *) VideoData, false);
 
         // 两个图像矩阵处理结束，可以通知主线程进行绘制
-        MyPlotEvent event( MY_PLOT_THREAD, ID_REPLAY_PROCESS );
-        event.SetOfflineImage(RdImage, MdImage, VideoImage);
+        MyPlotEvent* event = new MyPlotEvent( MY_PLOT_THREAD, ID_REPLAY_PROCESS );
+        event->SetOfflineImage(RdImage, MdImage, VideoImage);
 
         // 线程安全
-        // @todo 这里感觉不需要使用event.Clone 你放入队列的时候自动就克隆了，另外，复制指针几乎无工作量
-        wxQueueEvent(m_fatherPanel, event.Clone() );
+        wxQueueEvent(m_fatherPanel, event );
     }
 
     // 关闭文件 + 释放内存
@@ -723,10 +655,6 @@ wxThread::ExitCode BinReplayThread::Entry()
     return (wxThread::ExitCode)0;
 }
 
-/**
- * @brief wxBinReplayPagePanel类 - bin回放开始函数
- * @param event 触发事件
- */
 void wxBinReplayPagePanel::OnReplayRunClick(wxCommandEvent& event)
 {
     // 输出消息重定位
@@ -750,10 +678,6 @@ void wxBinReplayPagePanel::OnReplayRunClick(wxCommandEvent& event)
     wxLogMessage(wxT("Run the thread successfully!"));
 }
 
-/**
- * @brief wxBinReplayPagePanel类 - bin回放暂停函数
- * @param event 触发事件
- */
 void wxBinReplayPagePanel::OnReplayPauseClick(wxCommandEvent& event)
 {
     if (m_binReplayThread) // 线程是否仍旧存在
@@ -765,10 +689,6 @@ void wxBinReplayPagePanel::OnReplayPauseClick(wxCommandEvent& event)
     else wxLogError("The thread has ended, please run again!");
 }
 
-/**
- * @brief wxBinReplayPagePanel类 - bin回放恢复函数
- * @param event 触发事件
- */
 void wxBinReplayPagePanel::OnReplayResumeClick(wxCommandEvent& event)
 {
     if (m_binReplayThread) // 线程是否仍旧存在
@@ -780,10 +700,6 @@ void wxBinReplayPagePanel::OnReplayResumeClick(wxCommandEvent& event)
     else wxLogError("The thread has ended, please run again!");
 }
 
-/**
- * @brief wxBinReplayPagePanel类 - bin回放结束函数
- * @param event 触发事件
- */
 void wxBinReplayPagePanel::OnReplayEndClick(wxCommandEvent& event)
 {
     if (m_binReplayThread) // 线程是否仍旧存在
@@ -797,10 +713,6 @@ void wxBinReplayPagePanel::OnReplayEndClick(wxCommandEvent& event)
     else wxLogError("The thread has ended, please run again!");
 }
 
-/**
- * @brief wxBinReplayPagePanel类 - bin回放处理线程函数
- * @param event 触发事件
- */
 void wxBinReplayPagePanel::ReplayThreadProcess(MyPlotEvent& event)
 {
     // 主线程实时绘图 - Range Doppler绘图
@@ -823,11 +735,6 @@ void wxBinReplayPagePanel::ReplayThreadProcess(MyPlotEvent& event)
     delete event.GetOfflineVideoPic();
 }
 
-/**
- * @brief wxReplayFileDialog类 - 构造函数
- * @param parent 父窗口指针
- * @param title 窗口名称
- */
 wxReplayFileDialog::wxReplayFileDialog(wxBinReplayPagePanel* parent,const wxString& title)
     :wxDialog(parent, wxID_ANY, title, wxDefaultPosition, wxSize(700, 200))
 {
@@ -840,10 +747,10 @@ wxReplayFileDialog::wxReplayFileDialog(wxBinReplayPagePanel* parent,const wxStri
     m_binPath = new wxTextCtrl(this, wxID_ANY, wxT(""),wxDefaultPosition,wxSize(300,30));
     m_videoPath = new wxTextCtrl(this, wxID_ANY, wxT(""),wxDefaultPosition,wxSize(300,30));
     // 按钮设置
-    wxButton *btBinPath = new wxButton(this, ID_BIN_PATH, wxT("Select Path..."),wxDefaultPosition,wxSize(150,30));
-    wxButton *btVideoPath = new wxButton(this, ID_VIDEO_PATH, wxT("Select Path..."),wxDefaultPosition,wxSize(150,30));
-    wxButton *btReset = new wxButton(this, ID_RESET, wxT("RESET"),wxDefaultPosition,wxSize(150,30));
-    wxButton *btApply = new wxButton(this, ID_APPLY, wxT("APPLY"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btBinPath = new wxButton(this, ID_REPLAY_BIN_PATH, wxT("Select Path..."),wxDefaultPosition,wxSize(150,30));
+    wxButton *btVideoPath = new wxButton(this, ID_REPLAY_VIDEO_PATH, wxT("Select Path..."),wxDefaultPosition,wxSize(150,30));
+    wxButton *btReset = new wxButton(this, ID_REPLAY_RESET, wxT("RESET"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btApply = new wxButton(this, ID_REPLAY_APPLY, wxT("APPLY"),wxDefaultPosition,wxSize(150,30));
     // 设置布局控件
     wxBoxSizer *hBoxSizer1 = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer *hBoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
@@ -863,10 +770,10 @@ wxReplayFileDialog::wxReplayFileDialog(wxBinReplayPagePanel* parent,const wxStri
     this->SetSizer(vBoxSizer);
 
     // 链接响应事件
-    Connect(ID_BIN_PATH, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::OnSetBinPathClick));
-    Connect(ID_VIDEO_PATH, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::OnSetVideoPathClick));
-    Connect(ID_RESET, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::OnResetClick));
-    Connect(ID_APPLY, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::OnApplyClick));
+    Connect(ID_REPLAY_BIN_PATH, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::OnSetBinPathClick));
+    Connect(ID_REPLAY_VIDEO_PATH, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::OnSetVideoPathClick));
+    Connect(ID_REPLAY_RESET, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::OnResetClick));
+    Connect(ID_REPLAY_APPLY, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxReplayFileDialog::OnApplyClick));
 
     // 在屏幕中居中显示
     Centre();
@@ -874,10 +781,6 @@ wxReplayFileDialog::wxReplayFileDialog(wxBinReplayPagePanel* parent,const wxStri
     this->ShowModal();
 }
 
-/**
- * @brief wxReplayFileDialog类 - setBinPath函数
- * @param event 触发事件
- */
 void wxReplayFileDialog::OnSetBinPathClick(wxCommandEvent& event)
 {
     // 创建wxFileDialog类获取文件路径 - 用于在界面中显示
@@ -890,10 +793,6 @@ void wxReplayFileDialog::OnSetBinPathClick(wxCommandEvent& event)
     delete openFileDialog;
 }
 
-/**
- * @brief wxReplayFileDialog类 - setVideoPath函数
- * @param event 触发事件
- */
 void wxReplayFileDialog::OnSetVideoPathClick(wxCommandEvent& event)
 {
     // 创建wxFileDialog类获取文件路径 - 用于在界面中显示
@@ -906,20 +805,12 @@ void wxReplayFileDialog::OnSetVideoPathClick(wxCommandEvent& event)
     delete openFileDialog;
 }
 
-/**
- * @brief wxReplayFileDialog类 - Reset函数
- * @param event 触发事件
- */
 void wxReplayFileDialog::OnResetClick(wxCommandEvent& event)
 {
     m_binPath->Clear();
     m_videoPath->Clear();
 }
 
-/**
- * @brief wxReplayFileDialog类 - Apply函数
- * @param event 触发事件
- */
 void wxReplayFileDialog::OnApplyClick(wxCommandEvent& event)
 {
     // 获取路径 - 用于代码
@@ -930,20 +821,15 @@ void wxReplayFileDialog::OnApplyClick(wxCommandEvent& event)
 
 /* ----------------------------------------------------- Page 3 ------------------------------------------------------
  ----------------------------------------------- wxOfflinePagePanel类 ---------------------------------------------- */
-
-/**
- * @brief wxOfflinePagePanel类 - 构造函数
- * @param parent 父窗口指针
- */
 wxOfflinePagePanel::wxOfflinePagePanel(wxPanel *parent) : wxPanel(parent,wxID_ANY)
 {
     /* ----------------------------------------------- 控件设定 + 页面布局 --------------------------------------------- */
     // 按钮
     m_logOutPut = new wxTextCtrl(this, wxID_ANY, wxT(""),wxPoint(-1, -1), wxSize(-1, -1), wxTE_MULTILINE);
-    wxButton *btTrainExtra = new wxButton(this, ID_PAGE3_TRAIN, wxT("TrainSet Extract"),wxDefaultPosition,wxSize(150,30));
-    wxButton *btTestExtra = new wxButton(this, ID_PAGE3_TEST, wxT("TestSet Extract"),wxDefaultPosition,wxSize(150,30));
-    wxButton *btSvmModel = new wxButton(this, ID_PAGE3_SVM, wxT("SVM Model Build"),wxDefaultPosition,wxSize(150,30));
-    wxButton *btBinDemo = new wxButton(this, ID_PAGE3_DEMO, wxT("Single Bin Test"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btTrainExtra = new wxButton(this, ID_OFFLINE_TRAIN, wxT("TrainSet Extract"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btTestExtra = new wxButton(this, ID_OFFLINE_TEST, wxT("TestSet Extract"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btSvmModel = new wxButton(this, ID_OFFLINE_SVM, wxT("SVM Model Build"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btBinDemo = new wxButton(this, ID_OFFLINE_DEMO, wxT("Single Bin Test"),wxDefaultPosition,wxSize(150,30));
     wxStaticBox *sbBox = new wxStaticBox(this,wxID_ANY,wxT("Function Button"));
     // 输出log信息 - 用于重定位
     m_console = new wxLogTextCtrl(m_logOutPut);
@@ -1016,20 +902,16 @@ wxOfflinePagePanel::wxOfflinePagePanel(wxPanel *parent) : wxPanel(parent,wxID_AN
     this->SetSizer(vBoxSizer2);
 
     // 添加动态事件响应
-    Connect(ID_PAGE3_TRAIN, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflinePagePanel::TrainDataSet));
-    Connect(ID_PAGE3_TEST, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflinePagePanel::TestDataSet));
-    Connect(ID_PAGE3_SVM, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflinePagePanel::SvmModel));
-    Connect(ID_PAGE3_DEMO, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflinePagePanel::SingleBinDemo));
+    Connect(ID_OFFLINE_TRAIN, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflinePagePanel::TrainDataSet));
+    Connect(ID_OFFLINE_TEST, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflinePagePanel::TestDataSet));
+    Connect(ID_OFFLINE_SVM, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflinePagePanel::SvmModel));
+    Connect(ID_OFFLINE_DEMO, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflinePagePanel::SingleBinDemo));
 
     /* ----------------------------------------------- 参数初始化 --------------------------------------------- */
 
 
 }
 
-/**
- * @brief wxOfflinePagePanel类 - TrainDataSet函数
- * @param event 触发事件
- */
 void wxOfflinePagePanel::TrainDataSet(wxCommandEvent& event)
 {
     // 输出消息重定位
@@ -1047,10 +929,6 @@ void wxOfflinePagePanel::TrainDataSet(wxCommandEvent& event)
     wxLogMessage(wxT("Run the thread successfully!"));
 }
 
-/**
- * @brief wxOfflinePagePanel类 - TestDataSet函数
- * @param event 触发事件
- */
 void wxOfflinePagePanel::TestDataSet(wxCommandEvent& event)
 {
     // 输出消息重定位
@@ -1068,24 +946,16 @@ void wxOfflinePagePanel::TestDataSet(wxCommandEvent& event)
     wxLogMessage(wxT("Run the thread successfully!"));
 }
 
-/**
- * @brief wxOfflinePagePanel类 - SvmModel函数
- * @param event 触发事件
- */
 void wxOfflinePagePanel::SvmModel(wxCommandEvent& event)
 {
     // 输出消息重定位
     wxLog::SetActiveTarget(m_console);
-    OfflineFunctionClass offlineFunc(this);
+    OfflineFunction offlineFunc(this);
     offlineFunc.SvmPrediction();
 
     wxLogMessage(wxT("svm模型建立及预测处理完毕..."));
 }
 
-/**
- * @brief wxOfflinePagePanel类 - SingleBinDemo函数
- * @param event 触发事件
- */
 void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
 {
     // 输出消息重定向到TextCtrl窗口
@@ -1098,17 +968,12 @@ void wxOfflinePagePanel::SingleBinDemo(wxCommandEvent& event)
     std::string binFileNameStr = m_binPathStr.ToStdString();
 
     // 创建离线操作类
-    OfflineFunctionClass offlineFunc(this);
+    OfflineFunction offlineFunc(this);
     offlineFunc.SingleBinProcess(binFileNameStr);
 
     wxLogMessage(wxT("Bin文件微多普勒图生成及特征提取输出处理完毕..."));
 }
 
-/**
- * @brief wxReplayFileDialog类 - 构造函数
- * @param parent 父窗口指针
- * @param title 窗口名称
- */
 wxOfflineDemoFileDialog::wxOfflineDemoFileDialog(wxOfflinePagePanel* parent,const wxString& title)
     :wxDialog(parent, wxID_ANY, title, wxDefaultPosition, wxSize(700, 140))
 {
@@ -1146,10 +1011,6 @@ wxOfflineDemoFileDialog::wxOfflineDemoFileDialog(wxOfflinePagePanel* parent,cons
     this->ShowModal();
 }
 
-/**
- * @brief wxOfflineDemoFileDialog类 - setBinPath函数
- * @param event 触发事件
- */
 void wxOfflineDemoFileDialog::OnSetBinPathClick(wxCommandEvent& event)
 {
     // 创建wxFileDialog类获取文件路径 - 用于在界面中显示
@@ -1162,19 +1023,11 @@ void wxOfflineDemoFileDialog::OnSetBinPathClick(wxCommandEvent& event)
     delete openFileDialog;
 }
 
-/**
- * @brief wxOfflineDemoFileDialog类 - Reset函数
- * @param event 触发事件
- */
 void wxOfflineDemoFileDialog::OnResetClick(wxCommandEvent& event)
 {
     m_binPath->Clear();
 }
 
-/**
- * @brief wxOfflineDemoFileDialog类 - Apply函数
- * @param event 触发事件
- */
 void wxOfflineDemoFileDialog::OnApplyClick(wxCommandEvent& event)
 {
     // 获取路径 - 用于代码
@@ -1182,11 +1035,7 @@ void wxOfflineDemoFileDialog::OnApplyClick(wxCommandEvent& event)
     this->Destroy();
 }
 
-/**
- * @brief OfflineFunctionClass类 - 构造函数
- * @param parent 父窗口指针
- */
-OfflineFunctionClass::OfflineFunctionClass(wxOfflinePagePanel *parent)
+OfflineFunction::OfflineFunction(wxOfflinePagePanel *parent)
 {
     // 得到父窗口指针
     m_father = parent;
@@ -1198,11 +1047,7 @@ OfflineFunctionClass::OfflineFunctionClass(wxOfflinePagePanel *parent)
     };
 }
 
-/**
- * @brief 获取文件夹下的全文件名以及对应的分类
- * @details 为后续训练集和测试集bin文件读取及提取特征做预备
- */
-void OfflineFunctionClass::GetFileNamesAndTag()
+void OfflineFunction::GetFileNamesAndTag()
 {
     // 选择部分数据集所在的文件夹位置
     wxDirDialog *openDirDialog = new wxDirDialog(m_father,wxT("Please select the folder where the data set is located..."));
@@ -1249,12 +1094,7 @@ void OfflineFunctionClass::GetFileNamesAndTag()
     wxLogMessage(wxT("已读取指定文件夹的所有文件的路径及类别..."));
 }
 
-/**
- * @brief 训练集数据集数据标准化
- * @param sampleFeatureMat 训练集的特征值矩阵
- * @details 对训练集中提取的特征数据进行数据标准化，会输出一个最大最小值文件来用于对测试集也进行标准化
- */
-void OfflineFunctionClass::trainSetNormalized(arma::mat &sampleFeatureMat)
+void OfflineFunction::trainSetNormalized(arma::mat &sampleFeatureMat)
 {
     // 得到训练集特征矩阵的每一行列的最大最小值
     arma::rowvec featureMax = max(sampleFeatureMat, 0);
@@ -1294,12 +1134,7 @@ void OfflineFunctionClass::trainSetNormalized(arma::mat &sampleFeatureMat)
     wxLogMessage(wxT("训练集特征矩阵标准化完毕..."));
 }
 
-/**
- * @brief 测试集数据集数据标准化
- * @param sampleFeatureMat 测试集的特征值矩阵
- * @details 对测试集中提取的特征数据进行数据标准化，会读取训练集标准化后输出的一个最大最小值文件来用于对测试集进行标准化
- */
-void OfflineFunctionClass::testSetNormalized(arma::mat &sampleFeatureMat)
+void OfflineFunction::testSetNormalized(arma::mat &sampleFeatureMat)
 {
     // 得到测试集特征矩阵的每一行列的最大最小值
     arma::rowvec featureMax = max(sampleFeatureMat, 0);
@@ -1332,12 +1167,7 @@ void OfflineFunctionClass::testSetNormalized(arma::mat &sampleFeatureMat)
     wxLogMessage(wxT("测试集特征矩阵标准化完毕..."));
 }
 
-/**
- * @brief 用于输出特征值数据到txt文件
- * @param sampleFeatureMat 训练集/测试集特征值矩阵
- * @param outputFileName 输出的文件名
- */
-void OfflineFunctionClass::printFeatureData(arma::mat& sampleFeatureMat,const std::string& outputFileName)
+void OfflineFunction::printFeatureData(arma::mat& sampleFeatureMat,const std::string& outputFileName)
 {
     std::ofstream outFs(outputFileName,std::ios::out);
     for(arma::uword i = 0;i < sampleFeatureMat.n_rows;++i)
@@ -1353,11 +1183,7 @@ void OfflineFunctionClass::printFeatureData(arma::mat& sampleFeatureMat,const st
     outFs.close();
 }
 
-/**
- * @brief 训练集处理
- * @details 提取特征 + 标准化(输出最大最小值文件) + 输出
- */
-void OfflineFunctionClass::trainSetProcess()
+void OfflineFunction::trainSetProcess()
 {
     // 创建特征矩阵用于存所有样本的特征 - 最后一维度为了存分类结果
     arma::mat sampleFeature(m_dividePara.m_trainSampleNum,m_dividePara.m_featureDim + 1,arma::fill::zeros);
@@ -1436,11 +1262,7 @@ void OfflineFunctionClass::trainSetProcess()
     delete[] preBuf;
 }
 
-/**
- * @brief 测试集处理
- * @details 提取特征 + 标准化(按最大最小值文件标准化) + 输出
- */
-void OfflineFunctionClass::testSetProcess()
+void OfflineFunction::testSetProcess()
 {
     // 创建特征矩阵用于存所有样本的特征 - 最后一维度为了存分类结果
     arma::mat sampleFeature(m_dividePara.m_testSampleNum,m_dividePara.m_featureDim + 1,arma::fill::zeros);
@@ -1519,29 +1341,21 @@ void OfflineFunctionClass::testSetProcess()
     delete[] preBuf;
 }
 
-/**
- * @brief svm预测精度
- * @details 通过读取testData.txt和trainData.txt完成svm模型创建及输出
- */
-void OfflineFunctionClass::SvmPrediction()
+void OfflineFunction::SvmPrediction()
 {
-    // @todo - 想办法把这个参数自动化
+    // @todo 想办法把这个参数自动化，这个使用ini文件的读入方式进行修改，尚未完成
     DividePara dividePara = {
         .m_trainSampleNum = 648,
         .m_testSampleNum = 216,
         .m_featureDim = 401
     };
 
-    MySvmClass mySvmClass(dividePara);  // 建立svm相关处理类
-    mySvmClass.TrainSvmModel();         // 训练svm以得到svm模型
-    mySvmClass.predictSvm();            // 用测试集大体预测
+    MySvm mySvm(dividePara);      // 建立svm相关处理类
+    mySvm.TrainSvmModel();           // 训练svm以得到svm模型
+    mySvm.predictSvm();              // 用测试集大体预测
 }
 
-/**
- * @brief 单个Bin文件Demo演示具体实现代码
- * @details 在图窗中输出微多普勒图像及特征曲线
- */
-void OfflineFunctionClass::SingleBinProcess(std::string binFileNameStr)
+void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
 {
     // 输出消息
     wxLogMessage(wxT("请耐心等待结果输出 ... "));
@@ -1677,26 +1491,19 @@ void OfflineFunctionClass::SingleBinProcess(std::string binFileNameStr)
     delete radarCube;
 }
 
-/**
- * @brief FeatureExtraThread类 - 构造函数
- * @param parent 父窗口指针
- */
 FeatureExtraThread::FeatureExtraThread(wxOfflinePagePanel *parent) : wxThread(wxTHREAD_DETACHED)
 {
     m_fatherPanel = parent;
     trainFlag = true;
 }
 
-/**
- * @brief FeatureExtraThread类 - 启动函数
- */
 wxThread::ExitCode FeatureExtraThread::Entry()
 {
     // 情况1 - 处理训练集
     if(trainFlag)
     {
         // 创建离线操作类
-        OfflineFunctionClass offlineFunc(m_fatherPanel);
+        OfflineFunction offlineFunc(m_fatherPanel);
         offlineFunc.GetFileNamesAndTag();
         offlineFunc.trainSetProcess();
 
@@ -1707,7 +1514,7 @@ wxThread::ExitCode FeatureExtraThread::Entry()
 
     // 情况2 - 处理测试集
     // 创建离线操作类
-    OfflineFunctionClass offlineFunc(m_fatherPanel);
+    OfflineFunction offlineFunc(m_fatherPanel);
     offlineFunc.GetFileNamesAndTag();
     offlineFunc.testSetProcess();
 
@@ -1717,11 +1524,7 @@ wxThread::ExitCode FeatureExtraThread::Entry()
     return (wxThread::ExitCode)0;
 }
 
-/**
- * @brief FeatureExtraThread类 - 退出函数
- */
 void FeatureExtraThread::OnExit()
 {
 
 }
-
