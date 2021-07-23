@@ -413,7 +413,7 @@ public:
     /** 所有图更新
      * @note 目前尚未使用
      */
-    void refreshAll(arma::rowvec&, wxBitmap&);
+    void RefreshAll(arma::rowvec&, wxBitmap&);
 
 public:
     // 离线的Bin文件和
@@ -482,7 +482,6 @@ private:
 };
 
 /** 实现Offline Page下的所有功能 */
-// @todo 一般来说，在类的定义名字中，不出现Class这个字眼，请全文修改
 class OfflineFunction
 {
 public:
@@ -499,13 +498,12 @@ public:
     /** 训练集处理
      * @details 提取特征 + 得到标准化最大最小值文件(用于测试集处理) + 输出
      */
-     // @todo 我们统一一下，凡是自己设计的类，成员函数的首字母大写，比如，下面这个改成： TrainSetProcess，全文其他地方也类似修改掉
-    void trainSetProcess();
+    void TrainSetProcess();
 
     /** 测试集处理
      * @details 提取特征 + 标准化(按最大最小值文件标准化) + 输出
      */
-    void testSetProcess();
+    void TestSetProcess();
 
     /** svm预测精度
      * @details 通过读取testData.txt和trainData.txt完成svm模型创建及输出
@@ -522,19 +520,19 @@ private:
      * @param sampleFeatureMat 训练集的特征值矩阵
      * @details 对训练集中提取的特征数据进行数据标准化，会输出一个最大最小值文件来用于对测试集也进行标准化
      */
-    void trainSetNormalized(arma::mat &sampleFeatureMat);
+    void TrainSetNormalized(arma::mat &sampleFeatureMat);
 
     /** 测试集数据集数据标准化
      * @param sampleFeatureMat 测试集的特征值矩阵
      * @details 对测试集中提取的特征数据进行数据标准化，会读取训练集标准化后输出的一个最大最小值文件来用于对测试集进行标准化
      */
-    void testSetNormalized(arma::mat &sampleFeatureMat);
+    void TestSetNormalized(arma::mat &sampleFeatureMat);
 
     /** 用于输出特征值数据到txt文件
      * @param sampleFeatureMat 训练集/测试集特征值矩阵
      * @param outputFileName 输出的文件名
      */
-    void printFeatureData(arma::mat& sampleFeatureMat,const std::string& outputFileName);
+    void PrintFeatureData(arma::mat& sampleFeatureMat,const std::string& outputFileName);
 
 private:
     DividePara m_dividePara;                 ///< 数据集划分参数

@@ -22,10 +22,10 @@ struct RadarParam
           m_nRx(nR)
     {}
 
-    /** RadarParam类 - getFrameBytes函数
+    /** 返回一帧数据的字节大小值
     * @return 返回一帧数据的字节大小值
     */
-    unsigned long getFrameBytes() const;
+    unsigned long GetFrameBytes() const;
 
     int m_adcSample;                      ///< 采样个数
     int m_nChirp;                         ///< 扫频个数
@@ -63,17 +63,17 @@ struct UdpPacketParam
 class ModifyFrame
 {
 public:
-    /** ModifyFrame类 - 构造函数
+    /** 含参构造函数
      * @param para 雷达参数对象
      * @param frameLost 需要丢弃的帧数
      * @param udpPara udp参数对象
      */
     ModifyFrame(RadarParam &para, int frameLost, UdpPacketParam &udpPara);
 
-    /** ModifyFrame类 - getRightByte函数
+    /** 返回该丢弃的包和剩余字节数
      * @return 返回该丢弃的包和剩余字节数的pair对
      */
-    std::pair<int,int> getRightByte() const;
+    std::pair<int,int> GetRightByte() const;
 
 private:
     unsigned long m_singleFrameBytes;       ///< 一帧字节数

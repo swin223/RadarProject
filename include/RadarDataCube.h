@@ -21,7 +21,7 @@ class RadarDataCube
 public:
     /** 默认构造函数 */
     RadarDataCube()
-        : m_singleFrame(m_param.getFrameBytes() / 2),
+        : m_singleFrame(m_param.GetFrameBytes() / 2),
           m_realTimeMapStart(false),
           m_frameCount(0)
     {}
@@ -31,7 +31,7 @@ public:
      */
     RadarDataCube(RadarParam &radarConf)
         : m_param(radarConf),
-          m_singleFrame(m_param.getFrameBytes() / 2),
+          m_singleFrame(m_param.GetFrameBytes() / 2),
           m_realTimeMapStart(false),
           m_frameCount(0)
     {}
@@ -40,7 +40,7 @@ public:
     /** 获取单帧数据流
      * @return 整个单帧的数据流vector
      */
-    std::vector<int16_t> & getFrame()
+    std::vector<int16_t> & GetFrame()
     {
         return m_singleFrame;
     }
@@ -49,21 +49,21 @@ public:
     /** 构建雷达数据立方体
      * @return 返回雷达数据立方体(Complex)
      */
-    arma::cx_cube & creatCube();
+    arma::cx_cube & CreatCube();
 
     /** 创建RDM矩阵
      * @details RDM - Range Doppler Map
      */
-    void creatRdm();
+    void CreatRdm();
 
     /** 将RDM矩阵转换成Mat
      * @note 并不会改变radarRdmReal
      * @return 返回Range Doppler Map矩阵 - cv::Mat
      */
-    cv::Mat& convertRdmToMap();
+    cv::Mat& ConvertRdmToMap();
 
     /** 设置表示开始转化微多普勒图的Flag */
-    void setFlagForMap()
+    void SetFlagForMap()
     {
         m_realTimeMapStart = true;
     }
@@ -71,49 +71,49 @@ public:
     /** 更新微多普勒图(动态)
      * @details 用于Online Page、Replay Page得到实时更新的微多普勒图像
      */
-    void updateMicroMap();
+    void UpdateMicroMap();
 
     /** 更新微多普勒图(静态)
     * @details 用于Offline Page得到静态的微多普勒图像
     * @param frameCount 静态的微多普勒图像构建所需要的帧数
     */
-    void updateStaticMicroMap(long long frameCount);
+    void UpdateStaticMicroMap(long long frameCount);
 
     /** 转换成微多普勒图(动态)
      * @note 并不会改变realTimeMdMap
      * @return 返回micro doppler矩阵 - cv::Mat
      */
-    cv::Mat& convertMdToMap();
+    cv::Mat& ConvertMdToMap();
 
     /** 转换成微多普勒图(静态)
      * @param frameCount 静态的速度距离图构建所需要的帧数
      * @return 返回micro doppler矩阵 - cv::Mat
      */
-    cv::Mat& convertMdToStaticMap(long long frameCount);
+    cv::Mat& ConvertMdToStaticMap(long long frameCount);
 
     /** 从微多普勒频谱中提取相应的特征向量
      * @return 包含三大特征向量的vector
      */
-    std::vector<arma::rowvec> extractFeature();
+    std::vector<arma::rowvec> ExtractFeature();
 
 protected:
     /** 创建纵向Hanning窗
      * @param length 创建纵向Hanning窗的长度
      * @return 纵向Hanning窗向量
      */
-    arma::vec creatHanningCol(int length);
+    arma::vec CreatHanningCol(int length);
 
     /** 创建横向Hanning窗
      * @param length 创建横向Hanning窗的长度
      * @return 横向Hanning窗向量
      */
-    arma::rowvec creatHanningRow(int length);
+    arma::rowvec CreatHanningRow(int length);
 
     /** 通过计算得到用于Range Bin对应的速度序列
      * @details 得到用于Range Bin对应的速度序列来计算躯干特征矢量
      * @return 速度序列(向量)
      */
-    arma::vec readVelocity();
+    arma::vec ReadVelocity();
 
 protected:
     RadarParam m_param;                     ///< 雷达参数

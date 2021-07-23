@@ -167,7 +167,7 @@ PacketProcessThread::PacketProcessThread(wxOnlinePagePanel *parent) : wxThread(w
     m_radarParam = new RadarParam;                        // RadarParam对象初始化
     m_udpParam = new UdpPacketParam;                      // UdpPacketParam对象初始化
     m_radarCube = new RadarDataCube(*m_radarParam);    // RadarDataCube对象初始化
-    m_insertPos = m_radarCube->getFrame().begin();        // 定义插入帧数据中的位置初始化
+    m_insertPos = m_radarCube->GetFrame().begin();        // 定义插入帧数据中的位置初始化
     m_mdMapDrawFlag = true;                               // 表示开始绘制微多普勒图
     int needLostFrame = 5;                                // 需要丢弃的帧数 - 用于初始化参数修正类
     m_modifyFrame = new ModifyFrame(*m_radarParam,needLostFrame,*m_udpParam);
@@ -204,7 +204,7 @@ wxThread::ExitCode PacketProcessThread::Entry()
         unsigned long seqNum = udpPacketPtr[0] + udpPacketPtr[1] * 256;
 
         // 丢弃前面一些包
-        if(m_FirstFixFlag && seqNum <= m_modifyFrame->getRightByte().first)
+        if(m_FirstFixFlag && seqNum <= m_modifyFrame->GetRightByte().first)
         {
             delete[] udpPacketPtr;
             continue;
@@ -214,12 +214,12 @@ wxThread::ExitCode PacketProcessThread::Entry()
         // 现在Seq是modifyFrame->getRightByte().first + 1
         if (m_FirstFixFlag)
         {
-            int errorOffset = m_modifyFrame->getRightByte().second;
+            int errorOffset = m_modifyFrame->GetRightByte().second;
             m_insertPos = std::copy_n(reinterpret_cast<int16_t *>(udpPacketPtr + m_udpParam->m_bufOffset + errorOffset),
                                       (m_udpParam->m_bufSize - m_udpParam->m_bufOffset - errorOffset) / m_udpParam->m_bufScale,
                                       m_insertPos);
             m_FirstFixFlag = false;  // 后面就正常了
-            m_prePacketSeq = m_modifyFrame->getRightByte().first + 1;
+            m_prePacketSeq = m_modifyFrame->GetRightByte().first + 1;
             delete[] udpPacketPtr;
             continue;
         }
@@ -242,7 +242,7 @@ wxThread::ExitCode PacketProcessThread::Entry()
         if(m_udpPacketSeqFlag)
         {
             // 帧数据流目前还剩余多少可以存放
-            auto remainLength = m_radarCube->getFrame().end() - m_insertPos;
+            auto remainLength = m_radarCube->GetFrame().end() - m_insertPos;
             // 分支1 - 能存下当前整个数据包
             if (remainLength >= (m_udpParam->m_bufSize - m_udpParam->m_bufOffset) / m_udpParam->m_bufScale)
             {
@@ -263,31 +263,31 @@ wxThread::ExitCode PacketProcessThread::Entry()
                 wxFile saveDataFile("data.bin", wxFile::write_append);
                 // 使用wxFileOutputStream输出数据流 - 与创建出来的bin文件进行绑定
                 wxFileOutputStream dataToFile(saveDataFile);
-                dataToFile.Write(&(m_radarCube->getFrame()[0]), m_radarParam->getFrameBytes());
+                dataToFile.Write(&(m_radarCube->GetFrame()[0]), m_radarParam->GetFrameBytes());
 
                 // 雷达数据处理
                 // 帧数据流存满 - 进行相应处理
-                m_radarCube->creatCube();
-                m_radarCube->creatRdm();
+                m_radarCube->CreatCube();
+                m_radarCube->CreatRdm();
                 // 用Bitmap创建wxImage对象
-                int RdCols = m_radarCube->convertRdmToMap().cols, RdRows = m_radarCube->convertRdmToMap().rows;
+                int RdCols = m_radarCube->ConvertRdmToMap().cols, RdRows = m_radarCube->ConvertRdmToMap().rows;
                 // 使用malloc分配一块动态内存 - 目的在于独立出这块图的数据
                 void *RdData = malloc(3 * RdCols * RdRows);
-                memcpy(RdData, (void *) m_radarCube->convertRdmToMap().data, 3 * RdCols * RdRows);
+                memcpy(RdData, (void *) m_radarCube->ConvertRdmToMap().data, 3 * RdCols * RdRows);
                 wxImage *RdImage = new wxImage(RdCols, RdRows, (uchar *) RdData, false);
 
                 // 微多普勒图也进行更新
                 if (m_mdMapDrawFlag)
                 {
-                    m_radarCube->setFlagForMap();
+                    m_radarCube->SetFlagForMap();
                     m_mdMapDrawFlag = false;
                 }
 
-                m_radarCube->updateMicroMap();
-                int MdCols = m_radarCube->convertMdToMap().cols, MdRows = m_radarCube->convertMdToMap().rows;
+                m_radarCube->UpdateMicroMap();
+                int MdCols = m_radarCube->ConvertMdToMap().cols, MdRows = m_radarCube->ConvertMdToMap().rows;
                 // 使用malloc分配一块动态内存 - 目的在于独立出这块图的数据
                 void *MdData = malloc(3 * MdCols * MdRows);
-                memcpy(MdData, (void *) m_radarCube->convertMdToMap().data, 3 * MdCols * MdRows);
+                memcpy(MdData, (void *) m_radarCube->ConvertMdToMap().data, 3 * MdCols * MdRows);
                 wxImage *MdImage = new wxImage(MdCols, MdRows, (uchar *) MdData, false);
 
                 // 图像也进行存储
@@ -314,7 +314,7 @@ wxThread::ExitCode PacketProcessThread::Entry()
                 wxQueueEvent( m_fatherPanel, event);
 
                 // 一帧结束，重新设置insertPos 并把剩余的数据复制到帧数据流中存储
-                m_insertPos = m_radarCube->getFrame().begin();
+                m_insertPos = m_radarCube->GetFrame().begin();
                 m_insertPos = std::copy_n(
                                   reinterpret_cast<int16_t *>(udpPacketPtr + m_udpParam->m_bufOffset + remainLength * m_udpParam->m_bufScale),
                                   ((m_udpParam->m_bufSize - m_udpParam->m_bufOffset) / m_udpParam->m_bufScale) - remainLength,
@@ -579,9 +579,9 @@ wxThread::ExitCode BinReplayThread::Entry()
     // todo - 可以设置为智能指针
     RadarParam *radarParam = new RadarParam;                            // RadarParam对象初始化
     RadarDataCube *radarCube = new RadarDataCube(*radarParam);          // RadarDataCube对象初始化
-    int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];     // 初始化buff
+    int16_t *preBuf = new int16_t[radarParam->GetFrameBytes() / 2];     // 初始化buff
     std::vector<INT16>::iterator insertPos;                             // 设置初始复制位置
-    insertPos = radarCube->getFrame().begin();                          // 定义插入帧数据中的位置初始化
+    insertPos = radarCube->GetFrame().begin();                          // 定义插入帧数据中的位置初始化
 
     // 获取帧数 - totalFrame
     std::ifstream ifs(binFileNameStr,std::ios::binary | std::ios::in);
@@ -591,7 +591,7 @@ wxThread::ExitCode BinReplayThread::Entry()
     }
     ifs.seekg(0, std::ios_base::end);
     long long nFileLen = ifs.tellg();
-    long long totalFrame = nFileLen / radarParam->getFrameBytes();
+    long long totalFrame = nFileLen / radarParam->GetFrameBytes();
     // 文件指针回到开头
     ifs.clear();                 // 文件指针重定位前对流状态标志进行清除操作
     ifs.seekg(0,std::ios::beg);  // 文件指针重定位
@@ -599,31 +599,31 @@ wxThread::ExitCode BinReplayThread::Entry()
     // 执行读取的文件
     while (totalFrame-- && !TestDestroy())
     {
-        ifs.read((char *) preBuf, radarParam->getFrameBytes());
-        std::copy_n(preBuf, radarParam->getFrameBytes() / 2, insertPos);
+        ifs.read((char *) preBuf, radarParam->GetFrameBytes());
+        std::copy_n(preBuf, radarParam->GetFrameBytes() / 2, insertPos);
 
         // 雷达数据处理
         // 帧数据流存满 - 进行相应处理
-        radarCube->creatCube();
-        radarCube->creatRdm();
-        int RdCols = radarCube->convertRdmToMap().cols, RdRows = radarCube->convertRdmToMap().rows;
+        radarCube->CreatCube();
+        radarCube->CreatRdm();
+        int RdCols = radarCube->ConvertRdmToMap().cols, RdRows = radarCube->ConvertRdmToMap().rows;
         // 使用malloc分配一块动态内存 - 目的在于独立出这块图的数据
         void* RdData = malloc(3 * RdCols * RdRows);
-        memcpy(RdData, (void *) radarCube->convertRdmToMap().data, 3 * RdCols * RdRows);
+        memcpy(RdData, (void *) radarCube->ConvertRdmToMap().data, 3 * RdCols * RdRows);
         wxImage* RdImage = new wxImage(RdCols, RdRows, (uchar *) RdData, false);
 
         // 微多普勒图也进行更新
         if (m_mdMapDrawFlagOL)
         {
-            radarCube->setFlagForMap();
+            radarCube->SetFlagForMap();
             m_mdMapDrawFlagOL = false;
         }
 
-        radarCube->updateMicroMap();
-        int MdCols = radarCube->convertMdToMap().cols, MdRows = radarCube->convertMdToMap().rows;
+        radarCube->UpdateMicroMap();
+        int MdCols = radarCube->ConvertMdToMap().cols, MdRows = radarCube->ConvertMdToMap().rows;
         // 使用malloc分配一块动态内存 - 目的在于独立出这块图的数据
         void *MdData = malloc(3 * MdCols * MdRows);
-        memcpy(MdData, (void *) radarCube->convertMdToMap().data, 3 * MdCols * MdRows);
+        memcpy(MdData, (void *) radarCube->ConvertMdToMap().data, 3 * MdCols * MdRows);
         wxImage* MdImage = new wxImage(MdCols, MdRows, (uchar *) MdData, false);
 
         // 读取保存的视频
@@ -1094,7 +1094,7 @@ void OfflineFunction::GetFileNamesAndTag()
     wxLogMessage(wxT("已读取指定文件夹的所有文件的路径及类别..."));
 }
 
-void OfflineFunction::trainSetNormalized(arma::mat &sampleFeatureMat)
+void OfflineFunction::TrainSetNormalized(arma::mat &sampleFeatureMat)
 {
     // 得到训练集特征矩阵的每一行列的最大最小值
     arma::rowvec featureMax = max(sampleFeatureMat, 0);
@@ -1134,7 +1134,7 @@ void OfflineFunction::trainSetNormalized(arma::mat &sampleFeatureMat)
     wxLogMessage(wxT("训练集特征矩阵标准化完毕..."));
 }
 
-void OfflineFunction::testSetNormalized(arma::mat &sampleFeatureMat)
+void OfflineFunction::TestSetNormalized(arma::mat &sampleFeatureMat)
 {
     // 得到测试集特征矩阵的每一行列的最大最小值
     arma::rowvec featureMax = max(sampleFeatureMat, 0);
@@ -1167,7 +1167,7 @@ void OfflineFunction::testSetNormalized(arma::mat &sampleFeatureMat)
     wxLogMessage(wxT("测试集特征矩阵标准化完毕..."));
 }
 
-void OfflineFunction::printFeatureData(arma::mat& sampleFeatureMat,const std::string& outputFileName)
+void OfflineFunction::PrintFeatureData(arma::mat& sampleFeatureMat,const std::string& outputFileName)
 {
     std::ofstream outFs(outputFileName,std::ios::out);
     for(arma::uword i = 0;i < sampleFeatureMat.n_rows;++i)
@@ -1183,7 +1183,7 @@ void OfflineFunction::printFeatureData(arma::mat& sampleFeatureMat,const std::st
     outFs.close();
 }
 
-void OfflineFunction::trainSetProcess()
+void OfflineFunction::TrainSetProcess()
 {
     // 创建特征矩阵用于存所有样本的特征 - 最后一维度为了存分类结果
     arma::mat sampleFeature(m_dividePara.m_trainSampleNum,m_dividePara.m_featureDim + 1,arma::fill::zeros);
@@ -1191,7 +1191,7 @@ void OfflineFunction::trainSetProcess()
     // 初始化数据
     RadarParam *radarParam = new RadarParam;                             // RadarParam对象初始化
     RadarDataCube *trainSingleCube = new RadarDataCube(*radarParam);  // RadarDataCube对象初始化
-    int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];      // 初始化buff
+    int16_t *preBuf = new int16_t[radarParam->GetFrameBytes() / 2];      // 初始化buff
     std::vector<INT16>::iterator insertPos;                              // 设置初始复制位置
 
     wxLogMessage(wxT("开始从训练集对应文件夹中提取所有文件的特征..."));
@@ -1200,14 +1200,14 @@ void OfflineFunction::trainSetProcess()
     for(int i = 0;i < m_dividePara.m_trainSampleNum;++i)
     {
         std::string binFileName = m_filesArray[i].ToStdString();         // 获取要处理的训练集文件名
-        insertPos = trainSingleCube->getFrame().begin();                 // 定义插入帧数据中的位置初始化
+        insertPos = trainSingleCube->GetFrame().begin();                 // 定义插入帧数据中的位置初始化
         // 获取帧数 - totalFrame
         std::ifstream ifs(binFileName, std::ios::binary | std::ios::in);
         if(!ifs.is_open())
             return;
         ifs.seekg(0, std::ios_base::end);
         long long nFileLen = ifs.tellg();
-        long long totalFrame = nFileLen / radarParam->getFrameBytes();
+        long long totalFrame = nFileLen / radarParam->GetFrameBytes();
         // 文件指针回到开头
         ifs.clear();                 // 文件指针重定位前对流状态标志进行清除操作
         ifs.seekg(0,std::ios::beg);  // 文件指针重定位
@@ -1217,26 +1217,26 @@ void OfflineFunction::trainSetProcess()
         // 执行读取的文件
         while (frameCount--)
         {
-            ifs.read((char *) preBuf, radarParam->getFrameBytes());
-            std::copy_n(preBuf, radarParam->getFrameBytes() / 2, insertPos);
+            ifs.read((char *) preBuf, radarParam->GetFrameBytes());
+            std::copy_n(preBuf, radarParam->GetFrameBytes() / 2, insertPos);
 
             // 雷达数据处理
             // 帧数据流存满 - 进行相应处理
-            trainSingleCube->creatCube();
-            trainSingleCube->creatRdm();
+            trainSingleCube->CreatCube();
+            trainSingleCube->CreatRdm();
 
             // 微多普勒图也进行更新
             if (m_mdMapDrawFlag)
             {
-                trainSingleCube->setFlagForMap();
+                trainSingleCube->SetFlagForMap();
                 m_mdMapDrawFlag = false;
             }
 
-            trainSingleCube->updateStaticMicroMap(totalFrame);
+            trainSingleCube->UpdateStaticMicroMap(totalFrame);
         }
 
         // 所有处理结束后，会生成完整的微多普勒频谱，提取特征
-        std::vector<arma::rowvec> featureVec = trainSingleCube->extractFeature();
+        std::vector<arma::rowvec> featureVec = trainSingleCube->ExtractFeature();
         // 将提取的特征向量放在特征矩阵的第i行前部分
         sampleFeature.row(i).cols(0,m_dividePara.m_featureDim - 1) =
                 join_rows(join_rows(featureVec[0],featureVec[1]),featureVec[2]);
@@ -1252,9 +1252,9 @@ void OfflineFunction::trainSetProcess()
     // 输出训练集的文件
     const std::string trainSetFileName = "trainData.txt";
     // 训练集特征数据标准化
-    trainSetNormalized(sampleFeature);
+    TrainSetNormalized(sampleFeature);
     // 输出所有特征数据
-    printFeatureData(sampleFeature,trainSetFileName);
+    PrintFeatureData(sampleFeature,trainSetFileName);
 
     // 释放动态内存
     delete radarParam;
@@ -1262,7 +1262,7 @@ void OfflineFunction::trainSetProcess()
     delete[] preBuf;
 }
 
-void OfflineFunction::testSetProcess()
+void OfflineFunction::TestSetProcess()
 {
     // 创建特征矩阵用于存所有样本的特征 - 最后一维度为了存分类结果
     arma::mat sampleFeature(m_dividePara.m_testSampleNum,m_dividePara.m_featureDim + 1,arma::fill::zeros);
@@ -1270,7 +1270,7 @@ void OfflineFunction::testSetProcess()
     // 初始化数据
     RadarParam *radarParam = new RadarParam;                             // RadarParam对象初始化
     RadarDataCube *testSingleCube = new RadarDataCube(*radarParam);      // RadarDataCube对象初始化
-    int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];      // 初始化buff
+    int16_t *preBuf = new int16_t[radarParam->GetFrameBytes() / 2];      // 初始化buff
     std::vector<INT16>::iterator insertPos;                              // 设置初始复制位置
 
     wxLogMessage(wxT("开始从测试集对应文件夹中提取所有文件的特征..."));
@@ -1279,14 +1279,14 @@ void OfflineFunction::testSetProcess()
     for(int i = 0;i < m_dividePara.m_testSampleNum;++i)
     {
         std::string binFileName = m_filesArray[i].ToStdString();             // 获取要处理的训练集文件名
-        insertPos = testSingleCube->getFrame().begin();                      // 定义插入帧数据中的位置初始化
+        insertPos = testSingleCube->GetFrame().begin();                      // 定义插入帧数据中的位置初始化
         // 获取帧数 - totalFrame
         std::ifstream ifs(binFileName, std::ios::binary | std::ios::in);
         if(!ifs.is_open())
             return;
         ifs.seekg(0, std::ios_base::end);
         long long nFileLen = ifs.tellg();
-        long long totalFrame = nFileLen / radarParam->getFrameBytes();
+        long long totalFrame = nFileLen / radarParam->GetFrameBytes();
         // 文件指针回到开头
         ifs.clear();                 // 文件指针重定位前对流状态标志进行清除操作
         ifs.seekg(0,std::ios::beg);  // 文件指针重定位
@@ -1296,26 +1296,26 @@ void OfflineFunction::testSetProcess()
         // 执行读取的文件
         while (frameCount--)
         {
-            ifs.read((char *) preBuf, radarParam->getFrameBytes());
-            std::copy_n(preBuf, radarParam->getFrameBytes() / 2, insertPos);
+            ifs.read((char *) preBuf, radarParam->GetFrameBytes());
+            std::copy_n(preBuf, radarParam->GetFrameBytes() / 2, insertPos);
 
             // 雷达数据处理
             // 帧数据流存满 - 进行相应处理
-            testSingleCube->creatCube();
-            testSingleCube->creatRdm();
+            testSingleCube->CreatCube();
+            testSingleCube->CreatRdm();
 
             // 微多普勒图也进行更新
             if (m_mdMapDrawFlag)
             {
-                testSingleCube->setFlagForMap();
+                testSingleCube->SetFlagForMap();
                 m_mdMapDrawFlag = false;
             }
 
-            testSingleCube->updateStaticMicroMap(totalFrame);
+            testSingleCube->UpdateStaticMicroMap(totalFrame);
         }
 
         // 所有处理结束后，会生成完整的微多普勒频谱，提取特征
-        std::vector<arma::rowvec> featureVec = testSingleCube->extractFeature();
+        std::vector<arma::rowvec> featureVec = testSingleCube->ExtractFeature();
         // 将提取的特征向量放在特征矩阵的第i行前部分
         sampleFeature.row(i).cols(0,m_dividePara.m_featureDim - 1) =
                 join_rows(join_rows(featureVec[0],featureVec[1]),featureVec[2]);
@@ -1331,9 +1331,9 @@ void OfflineFunction::testSetProcess()
     // 输出测试集的文件
     const std::string testSetFileName = "testData.txt";
     // 测试集特征数据标准化
-    testSetNormalized(sampleFeature);
+    TestSetNormalized(sampleFeature);
     // 输出所有特征数据
-    printFeatureData(sampleFeature,testSetFileName);
+    PrintFeatureData(sampleFeature,testSetFileName);
 
     // 释放动态内存
     delete radarParam;
@@ -1352,7 +1352,7 @@ void OfflineFunction::SvmPrediction()
 
     MySvm mySvm(dividePara);      // 建立svm相关处理类
     mySvm.TrainSvmModel();           // 训练svm以得到svm模型
-    mySvm.predictSvm();              // 用测试集大体预测
+    mySvm.PredictSvm();              // 用测试集大体预测
 }
 
 void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
@@ -1363,10 +1363,10 @@ void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
     // 雷达信号处理类相关变量初始设置
     RadarParam *radarParam = new RadarParam;                          // RadarParam对象初始化
     RadarDataCube *radarCube = new RadarDataCube(*radarParam);     // RadarDataCube对象初始化
-    int16_t *preBuf = new int16_t[radarParam->getFrameBytes() / 2];   // 初始化buff
+    int16_t *preBuf = new int16_t[radarParam->GetFrameBytes() / 2];   // 初始化buff
 
     std::vector<INT16>::iterator insertPos;                           // 设置初始复制位置
-    insertPos = radarCube->getFrame().begin();                        // 定义插入帧数据中的位置初始化
+    insertPos = radarCube->GetFrame().begin();                        // 定义插入帧数据中的位置初始化
 
     // 获取帧数 - totalFrame
     std::ifstream ifs(binFileNameStr, std::ios::binary | std::ios::in);
@@ -1374,7 +1374,7 @@ void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
         return;
     ifs.seekg(0, std::ios_base::end);
     long long nFileLen = ifs.tellg();
-    long long totalFrame = nFileLen / radarParam->getFrameBytes();
+    long long totalFrame = nFileLen / radarParam->GetFrameBytes();
     // 文件指针回到开头
     ifs.clear();                 // 文件指针重定位前对流状态标志进行清除操作
     ifs.seekg(0,std::ios::beg);  // 文件指针重定位
@@ -1385,36 +1385,36 @@ void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
     // 执行读取的文件
     while (frameCount--)
     {
-        ifs.read((char *) preBuf, radarParam->getFrameBytes());
-        std::copy_n(preBuf, radarParam->getFrameBytes() / 2, insertPos);
+        ifs.read((char *) preBuf, radarParam->GetFrameBytes());
+        std::copy_n(preBuf, radarParam->GetFrameBytes() / 2, insertPos);
 
         // 雷达数据处理
         // 帧数据流存满 - 进行相应处理
-        radarCube->creatCube();
-        radarCube->creatRdm();
+        radarCube->CreatCube();
+        radarCube->CreatRdm();
 
         // 微多普勒图也进行更新
         if (m_mdMapDrawFlag)
         {
-            radarCube->setFlagForMap();
+            radarCube->SetFlagForMap();
             m_mdMapDrawFlag = false;
         }
 
-        radarCube->updateStaticMicroMap(totalFrame);
+        radarCube->UpdateStaticMicroMap(totalFrame);
     }
 
     // 所有处理结束后，会生成完整的微多普勒频谱，提取特征
-    std::vector<arma::rowvec> featureVec = radarCube->extractFeature();
+    std::vector<arma::rowvec> featureVec = radarCube->ExtractFeature();
 
 #ifndef NDEBUG
     // cv::imshow("aa",radarCube->convertMdToStaticMap(totalFrame));
     // cv::waitKey(0);
 #endif
 
-    int RdCols = radarCube->convertMdToStaticMap(totalFrame).cols, RdRows = radarCube->convertMdToStaticMap(totalFrame).rows;
+    int RdCols = radarCube->ConvertMdToStaticMap(totalFrame).cols, RdRows = radarCube->ConvertMdToStaticMap(totalFrame).rows;
     // 使用malloc分配一块动态内存 - 目的在于独立出这块图的数据
     void *RdData = malloc(3 * RdCols * RdRows);
-    memcpy(RdData, (void *) radarCube->convertMdToStaticMap(totalFrame).data, 3 * RdCols * RdRows);
+    memcpy(RdData, (void *) radarCube->ConvertMdToStaticMap(totalFrame).data, 3 * RdCols * RdRows);
     wxImage *RdImage = new wxImage(RdCols, RdRows, (uchar *) RdData, false);
 
     m_father->m_mdPic->SetBitmap(*RdImage,0,0,128,150);
@@ -1505,7 +1505,7 @@ wxThread::ExitCode FeatureExtraThread::Entry()
         // 创建离线操作类
         OfflineFunction offlineFunc(m_fatherPanel);
         offlineFunc.GetFileNamesAndTag();
-        offlineFunc.trainSetProcess();
+        offlineFunc.TrainSetProcess();
 
         wxLogMessage(wxT("训练集处理完毕..."));
         wxLogMessage(wxT("请您继续完成测试集的特征提取..."));
@@ -1516,7 +1516,7 @@ wxThread::ExitCode FeatureExtraThread::Entry()
     // 创建离线操作类
     OfflineFunction offlineFunc(m_fatherPanel);
     offlineFunc.GetFileNamesAndTag();
-    offlineFunc.testSetProcess();
+    offlineFunc.TestSetProcess();
 
     wxLogMessage(wxT("测试集处理完毕..."));
     wxLogMessage(wxT("可以继续执行svm分类等操作..."));

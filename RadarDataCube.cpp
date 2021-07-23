@@ -1,14 +1,14 @@
 #include "RadarDataCube.h"
 
-arma::cx_cube & RadarDataCube::creatCube()
+arma::cx_cube & RadarDataCube::CreatCube()
 {
     // 转换成double类型的arma向量
-    arma::vec frameDataStrem(m_param.getFrameBytes() / 2);
-    for (int i = 0;i < m_param.getFrameBytes() / 2;++i)
+    arma::vec frameDataStrem(m_param.GetFrameBytes() / 2);
+    for (int i = 0;i < m_param.GetFrameBytes() / 2;++i)
         frameDataStrem.at(i) = (double)m_singleFrame[i];
 
     // 数据 Complex 化
-    arma::mat iqMat = reshape(frameDataStrem, 4, m_param.getFrameBytes() / 2 / 4);
+    arma::mat iqMat = reshape(frameDataStrem, 4, m_param.GetFrameBytes() / 2 / 4);
     arma::cx_mat preRadarCube(iqMat.rows(0, 1), iqMat.rows(2, 3));
 
     // 构建雷达数据立方体
@@ -18,7 +18,7 @@ arma::cx_cube & RadarDataCube::creatCube()
     return m_radarCube;
 }
 
-arma::vec RadarDataCube::creatHanningCol(int length)
+arma::vec RadarDataCube::CreatHanningCol(int length)
 {
     const double PI = 3.14159265359;
     arma::vec hanWin(length,arma::fill::zeros);
@@ -27,7 +27,7 @@ arma::vec RadarDataCube::creatHanningCol(int length)
     return hanWin;
 }
 
-arma::rowvec RadarDataCube::creatHanningRow(int length)
+arma::rowvec RadarDataCube::CreatHanningRow(int length)
 {
     const double PI = 3.14159265359;
     arma::rowvec hanWin(length,arma::fill::zeros);
@@ -36,13 +36,13 @@ arma::rowvec RadarDataCube::creatHanningRow(int length)
     return hanWin;
 }
 
-void RadarDataCube::creatRdm()
+void RadarDataCube::CreatRdm()
 {
     // 这个函数中只取RX0的数据
 
     // 创建汉宁窗
-    arma::vec colHanning = creatHanningCol(m_param.m_adcSample);  // adcSample列汉宁窗
-    arma::rowvec rowHanning = creatHanningRow(m_param.m_nChirp);  // nchirp行汉宁窗
+    arma::vec colHanning = CreatHanningCol(m_param.m_adcSample);  // adcSample列汉宁窗
+    arma::rowvec rowHanning = CreatHanningRow(m_param.m_nChirp);  // nchirp行汉宁窗
 
     // 加窗
     for(int i = 0;i < m_param.m_nChirp;++i)
@@ -104,7 +104,7 @@ void RadarDataCube::creatRdm()
         (*it) = 10 * log10(1.0 + (*it));
 }
 
-void RadarDataCube::updateMicroMap()
+void RadarDataCube::UpdateMicroMap()
 {
     int rowDiffDefault = 10;
     arma::rowvec rangeSum = arma::sum(m_radarRdmReal.rows(rowDiffDefault,
@@ -130,7 +130,7 @@ void RadarDataCube::updateMicroMap()
     m_realTimeMdMap.col(m_realTimeMdMap.n_cols - 1) = rangeSumCol;
 }
 
-void RadarDataCube::updateStaticMicroMap(long long frameCount)
+void RadarDataCube::UpdateStaticMicroMap(long long frameCount)
 {
     int rowDiffDefault = 10;
     arma::rowvec rangeSum = arma::sum(m_radarRdmReal.rows(rowDiffDefault,
@@ -152,7 +152,7 @@ void RadarDataCube::updateStaticMicroMap(long long frameCount)
     m_realTimeMdMap.col(m_realTimeMdMap.n_cols - 1) = rangeSumCol;
 }
 
-cv::Mat& RadarDataCube::convertRdmToMap()
+cv::Mat& RadarDataCube::ConvertRdmToMap()
 {
     // realTimeMdMap是实时微多普勒矩阵，数据不应该改变
     auto tempRdmReal = m_radarRdmReal;
@@ -188,7 +188,7 @@ cv::Mat& RadarDataCube::convertRdmToMap()
     return m_rdmMap;
 }
 
-cv::Mat& RadarDataCube::convertMdToMap()
+cv::Mat& RadarDataCube::ConvertMdToMap()
 {
     // realTimeMdMap是实时微多普勒矩阵，数据不应该改变
     auto tempReadTimeMd = m_realTimeMdMap;
@@ -242,7 +242,7 @@ cv::Mat& RadarDataCube::convertMdToMap()
     return m_mdMap;
 }
 
-cv::Mat& RadarDataCube::convertMdToStaticMap(long long frameCount)
+cv::Mat& RadarDataCube::ConvertMdToStaticMap(long long frameCount)
 {
     // realTimeMdMap是实时微多普勒矩阵，数据不应该改变
     auto tempReadTimeMd = m_realTimeMdMap;
@@ -271,7 +271,7 @@ cv::Mat& RadarDataCube::convertMdToStaticMap(long long frameCount)
     return m_mdMap;
 }
 
-std::vector<arma::rowvec> RadarDataCube::extractFeature()
+std::vector<arma::rowvec> RadarDataCube::ExtractFeature()
 {
     auto microDoppler = m_realTimeMdMap;   // 遵循不改变原数据原则，生成临时变量
 
@@ -299,7 +299,7 @@ std::vector<arma::rowvec> RadarDataCube::extractFeature()
 
     // 速度质心序列提取
     arma::rowvec denominator = sum(microDoppler,0);
-    arma::vec velocity = readVelocity();
+    arma::vec velocity = ReadVelocity();
 #ifndef NDEBUG
     velocity.print();
 #endif
@@ -343,7 +343,7 @@ std::vector<arma::rowvec> RadarDataCube::extractFeature()
     return featureVec;
 }
 
-arma::vec RadarDataCube::readVelocity()
+arma::vec RadarDataCube::ReadVelocity()
 {
     // 计算雷达速度分辨力的公式为 lambda/(2*Tf)
     double c = 3.0 * (1e+8),freq = 79 * (1e+9);           // 光速c、雷达工作频率freq

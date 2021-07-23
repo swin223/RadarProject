@@ -154,7 +154,7 @@ void MySvm::TrainSvmModel()
     delete[] m_svmProb.y;
 }
 
-void MySvm::predictSvm()
+void MySvm::PredictSvm()
 {
     // 搜索保存的svm模型并打开
     wxLogMessage(wxT(" ------------------------------------------ "));

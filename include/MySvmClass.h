@@ -40,7 +40,7 @@ public:
     /** 预测测试集数据
     * @details 用于大体预测svm的精度
     */
-    void predictSvm();
+    void PredictSvm();
 
 private:
     /** 初始化svm训练参数
