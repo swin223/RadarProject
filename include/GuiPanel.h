@@ -369,8 +369,12 @@ public:
 public:
     wxBinReplayPagePanel* m_fatherPanel;           ///< 父亲Panel指针
 
-    // @todo 下面这个变量的定义，md什么意思？OL什么意思，请在注释里面对应说清楚，或者把变量名字修改完整
-    bool m_mdMapDrawFlagOL;                        ///< 表示开始绘制标志位
+    // qu : 下面这个变量的定义，md什么意思？OL什么意思，请在注释里面对应说清楚，或者把变量名字修改完整
+    // note : 这里原先是m_mdMapDrawFlagOL，现在是m_mdMapDrawFlag
+    // 之前由于所有参数写在一起，所以OL是offline的意思，为了区分Online Page的m_mdMapDrawFlag标志
+    // 但是现在位于不同的类中，不需要OL来区分;md表示Micro doppler的意思
+    // 这个flag用于表示是否开始绘制微多普勒图？因为要用前100帧来自适应图像颜色，其为true后，往后接收100帧用于自适应。
+    bool m_mdMapDrawFlag;                         ///< 表示开始绘制标志位
 };
 
 /* ------------------------------------------------------- Page 3 -----------------------------------------------------

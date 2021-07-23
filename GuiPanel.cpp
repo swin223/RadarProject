@@ -613,10 +613,10 @@ wxThread::ExitCode BinReplayThread::Entry()
         wxImage* RdImage = new wxImage(RdCols, RdRows, (uchar *) RdData, false);
 
         // 微多普勒图也进行更新
-        if (m_mdMapDrawFlagOL)
+        if (m_mdMapDrawFlag)
         {
             radarCube->SetFlagForMap();
-            m_mdMapDrawFlagOL = false;
+            m_mdMapDrawFlag = false;
         }
 
         radarCube->UpdateMicroMap();
