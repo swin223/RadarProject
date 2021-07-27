@@ -149,6 +149,7 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
 
     /* -------------------------------------------------- 参数初始化 --------------------------------------------------- */
     // 读取.ini文件中的配置来配置一些雷达参数
+    // 参阅heatmap相关项目ini配置、官网wxFileConfig类的官方文档、wxWidgets Discussion Forum一些例子和讨论
     m_configIni = new wxFileConfig(wxEmptyString,
                                    wxEmptyString,
                                    wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPathWithSep() + _T("config.ini"));
