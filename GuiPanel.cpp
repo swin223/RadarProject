@@ -5,6 +5,7 @@
 #include <wx/wfstream.h>
 #include <wx/notebook.h>
 #include <memory>
+#include <wx/stdpaths.h>
 
 /* ----------------------------------------------------- 实现App ----------------------------------------------------- */
 IMPLEMENT_APP(MyApp)
@@ -20,6 +21,7 @@ bool MyApp::OnInit()
 MyFrame::MyFrame(const wxString& title)
     : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(1400, 800))
 {
+    /* ---------------------------------------------- 控件设定 + 页面布局 ----------------------------------------------- */
     // 创建菜单项 - 文件
     wxMenu *fileMenu = new wxMenu;
     wxMenu *aboutMenu = new wxMenu;
@@ -146,13 +148,38 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
     Connect(ID_ONLINE_UDPDISCT, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnDisconnectUDPClick));
 
     /* -------------------------------------------------- 参数初始化 --------------------------------------------------- */
-    // 摄像头捕获参数初始化
-    m_capture = new cv::VideoCapture(0);             // 绑定摄像头
-    m_videoPath = "RealTimeVideo\\test.avi";               // 存视频的路径
-    m_outputVideo = new cv::VideoWriter;                   // 视频输出
+    // 读取.ini文件中的配置来配置一些雷达参数
+    m_configIni = new wxFileConfig(wxEmptyString,
+                                   wxEmptyString,
+                                   wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPathWithSep() + _T("config.ini"));
+#ifndef NDEBUG
+    int groupNums = m_configIni->GetNumberOfGroups();
+    std::cout << groupNums << std::endl;
+#endif
+    m_configIni->SetPath(_T("/OnlinePage"));
 
     // 雷达信号处理类相关变量初始设置
-    m_udpParam = new UdpPacketParam;                       // UdpPacketParam对象初始化
+    m_udpParam = new UdpPacketParam;
+    if (m_configIni->Read(_T("UdpPacketParam/bufSize"), &(m_udpParam->m_bufSize)));
+    if (m_configIni->Read(_T("UdpPacketParam/bufScale"), &(m_udpParam->m_bufScale)));
+    if (m_configIni->Read(_T("UdpPacketParam/bufOffset"), &(m_udpParam->m_bufOffset)));
+
+#ifndef NDEBUG
+    std::cout << m_udpParam->m_bufSize << " " << m_udpParam->m_bufScale << " " << m_udpParam->m_bufOffset << std::endl;
+#endif
+
+    // 摄像头捕获参数初始化
+    m_capture = new cv::VideoCapture(0);             // 绑定摄像头
+    wxString tempPath;
+    if (m_configIni->Read(_T("Video/videoSavePath"), &tempPath))
+    {
+        m_videoPath = tempPath.ToStdString();              // 存视频的路径
+    }
+    m_outputVideo = new cv::VideoWriter;                   // 视频输出
+
+#ifndef NDEBUG
+    std::cout << m_videoPath << std::endl;
+#endif
 }
 
 PacketProcessThread::PacketProcessThread(wxOnlinePagePanel *parent) : wxThread(wxTHREAD_DETACHED)
@@ -291,6 +318,8 @@ wxThread::ExitCode PacketProcessThread::Entry()
                 wxImage *MdImage = new wxImage(MdCols, MdRows, (uchar *) MdData, false);
 
                 // 图像也进行存储
+                // 注意:这里要特别说明一下，此块作用域内的代码均是得到一个完整的帧之后进行的处理，所以得到一个完整帧时，如下代码功能就是存储一帧摄像头数据
+                // 目的:简单来讲，就是为了保持数据的存储处理和摄像头数据同步，处理得到Range Doppler和Micro Doppler时也得到摄像头一帧数据，回放时也就能完全匹配
                 (*(m_fatherPanel->m_capture)) >> (*m_singleFramePic);
                 // 存图像
                 if (m_fatherPanel->m_outputVideo->isOpened())
@@ -557,7 +586,7 @@ wxBinReplayPagePanel::wxBinReplayPagePanel(wxPanel *parent)
 BinReplayThread::BinReplayThread(wxBinReplayPagePanel *parent) : wxThread(wxTHREAD_DETACHED)
 {
     m_fatherPanel = parent;
-    m_mdMapDrawFlagOL = true;
+    m_mdMapDrawFlag = true;
 }
 
 void BinReplayThread::OnExit()
@@ -908,8 +937,11 @@ wxOfflinePagePanel::wxOfflinePagePanel(wxPanel *parent) : wxPanel(parent,wxID_AN
     Connect(ID_OFFLINE_DEMO, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOfflinePagePanel::SingleBinDemo));
 
     /* ----------------------------------------------- 参数初始化 --------------------------------------------- */
-
-
+    // 读取.ini文件中的配置来配置一些雷达参数
+    m_configIni = new wxFileConfig(wxEmptyString,
+                                   wxEmptyString,
+                                   wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPathWithSep() + _T("config.ini"));
+    m_configIni->SetPath(_T("/OfflinePage"));
 }
 
 void wxOfflinePagePanel::TrainDataSet(wxCommandEvent& event)
@@ -1040,11 +1072,13 @@ OfflineFunction::OfflineFunction(wxOfflinePagePanel *parent)
     // 得到父窗口指针
     m_father = parent;
     // 数据集划分参数初始化
-    m_dividePara = {
-            .m_trainSampleNum = 648,
-            .m_testSampleNum = 216,
-            .m_featureDim = 401
-    };
+    if (m_father->m_configIni->Read(_T("DataSet/trainSampleNum"), &(m_dividePara.m_trainSampleNum)));
+    if (m_father->m_configIni->Read(_T("DataSet/testSampleNum"), &(m_dividePara.m_testSampleNum)));
+    if (m_father->m_configIni->Read(_T("DataSet/featureDim"), &(m_dividePara.m_featureDim)));
+
+#ifndef NDEBUG
+    std::cout << m_dividePara.m_trainSampleNum << " " << m_dividePara.m_testSampleNum << " " << m_dividePara.m_featureDim << std::endl;
+#endif
 }
 
 void OfflineFunction::GetFileNamesAndTag()
@@ -1343,14 +1377,7 @@ void OfflineFunction::TestSetProcess()
 
 void OfflineFunction::SvmPrediction()
 {
-    // @todo 想办法把这个参数自动化，这个使用ini文件的读入方式进行修改，尚未完成
-    DividePara dividePara = {
-        .m_trainSampleNum = 648,
-        .m_testSampleNum = 216,
-        .m_featureDim = 401
-    };
-
-    MySvm mySvm(dividePara);      // 建立svm相关处理类
+    MySvm mySvm(m_dividePara);       // 建立svm相关处理类
     mySvm.TrainSvmModel();           // 训练svm以得到svm模型
     mySvm.PredictSvm();              // 用测试集大体预测
 }

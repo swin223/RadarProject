@@ -4,6 +4,7 @@
 #include <queue>
 #include <wx/dir.h>
 #include <wx/dirdlg.h>
+#include <wx/fileconf.h>
 #include "wx/wx.h"
 #include "wx/socket.h"
 #include "RadarDataCube.h"
@@ -145,6 +146,9 @@ private:
     wxImagePanel *m_cameraPicPanel;    ///< 存放摄像头拍摄图
     FILE *m_logFile;                   ///< log信息输出文件(创建文件以输出) - 用于调试查看是否丢帧
     wxLogStderr *m_logOutput;          ///< log信息输出
+
+    // 参数配置相关
+    wxFileConfig* m_configIni;         ///< 用于从ini文件中读取相应配置
 
     // socket及udp相关
     wxDatagramSocket* m_mySocket;      ///< 用于接收数据的socket(UDP)
@@ -422,6 +426,9 @@ public:
 public:
     // 离线的Bin文件和
     wxString m_binPathStr;                        ///< 离线的Bin文件路径
+
+    // 参数配置相关
+    wxFileConfig* m_configIni;                    ///< 用于从ini文件中读取相应配置
 
 private:
     // 窗口控件相关
