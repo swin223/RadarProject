@@ -470,9 +470,8 @@ void wxOnlinePagePanel::OnDisconnectUDPClick(wxCommandEvent& event)
     m_mySocket->Destroy();
     m_mySocket->Notify(false);
     m_outputVideo->release();           // 摄像头保存设置为关闭
-    m_capture->release();               // 摄像头关闭
-
     m_packetProcessThread->Delete();    // 子线程关闭
+    m_capture->release();               // 摄像头关闭
 }
 
 void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)
