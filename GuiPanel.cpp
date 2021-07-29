@@ -107,6 +107,7 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
     wxButton *btUdpConnect = new wxButton(this, ID_ONLINE_UDPCT, wxT("UDP CONNECT"),wxDefaultPosition,wxSize(150,30));
     wxButton *btAwr1642 = new wxButton(this, ID_ONLINE_AWR1642, wxT("RUN AWR1642"),wxDefaultPosition,wxSize(150,30));
     wxButton *btUdpDisconnect = new wxButton(this, ID_ONLINE_UDPDISCT, wxT("UDP DISCONNECT"),wxDefaultPosition,wxSize(150,30));
+    wxButton *btDetectAction = new wxButton(this, ID_ONLINE_DECTACTION, wxT("DETECT ACTION"),wxDefaultPosition,wxSize(150,30));
     wxStaticBox *sBox = new wxStaticBox(this,wxID_ANY,wxT("Function Button"));
     // 图窗和静态文本
     m_rdPicPanel = new wxImagePanel(this);
@@ -121,6 +122,7 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
     sBoxSizer->Add(btUdpConnect,0,wxALIGN_CENTER_HORIZONTAL | wxALL,10);
     sBoxSizer->Add(btAwr1642,0,wxALIGN_CENTER_HORIZONTAL | wxALL,10);
     sBoxSizer->Add(btUdpDisconnect,0,wxALIGN_CENTER_HORIZONTAL | wxALL,10);
+    sBoxSizer->Add(btDetectAction,0,wxALIGN_CENTER_HORIZONTAL | wxALL,10);
     wxBoxSizer *rdBoxSizer = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer *mdBoxSizer = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer *cameraBoxSizer = new wxBoxSizer(wxVERTICAL);
@@ -146,6 +148,7 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
     Connect(ID_ONLINE_UDPCT, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnConnectUDPClick));
     Connect(ID_ONLINE_AWR1642, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnEnableAWR1642Click));
     Connect(ID_ONLINE_UDPDISCT, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnDisconnectUDPClick));
+    Connect(ID_ONLINE_DECTACTION, wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(wxOnlinePagePanel::OnDetectActionClick));
 
     /* -------------------------------------------------- 参数初始化 --------------------------------------------------- */
     // 读取.ini文件中的配置来配置一些雷达参数
@@ -472,6 +475,14 @@ void wxOnlinePagePanel::OnDisconnectUDPClick(wxCommandEvent& event)
     m_outputVideo->release();           // 摄像头保存设置为关闭
     m_packetProcessThread->Delete();    // 子线程关闭
     m_capture->release();               // 摄像头关闭
+}
+
+void wxOnlinePagePanel::OnDetectActionClick(wxCommandEvent& event)
+{
+    wxMessageBox(wxT("yes"));
+
+
+
 }
 
 void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)

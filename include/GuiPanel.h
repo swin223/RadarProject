@@ -21,6 +21,7 @@ enum {
     ID_ONLINE_UDPCT,           ///< 对应 Online Page - UDP CONNECT按钮
     ID_ONLINE_AWR1642,         ///< 对应 Online Page - RUN AWR1642按钮
     ID_ONLINE_UDPDISCT,        ///< 对应 Online Page - UDP DISCONNECT按钮
+    ID_ONLINE_DECTACTION,      ///< 对应 Online Page - DETECT ACTION按钮
     ID_ONLINE_SOCKET,          ///< 对应 Online Page - socket事件
     ID_ONLINE_PROCESS,         ///< 对应 Online Page - 子线程Packet处理
     ID_REPLAY_RUN,             ///< 对应 Replay Page - 子线程启动事件
@@ -117,6 +118,12 @@ public:
      * @param 触发事件
      */
     void OnDisconnectUDPClick(wxCommandEvent& event);
+
+    /** 进行单动作识别
+    * @param 触发事件
+    * @deteil 得到单次动作的bin文件(固定帧)并对其进行识别
+    */
+    void OnDetectActionClick(wxCommandEvent& event);
 
     /** Socket触发函数
      * @param 触发事件
