@@ -189,6 +189,7 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
     m_isRecord = false;                                    // 表明程序尚未开始录制固定帧动作数据
     m_totalFrame = 150;                                    // 程序录制固定帧帧数
     m_savedBinNum = 1;                                     // bin文件的计数序号(从1开始)
+    m_delayFrame = 150;
 }
 
 PacketProcessThread::PacketProcessThread(wxOnlinePagePanel *parent) : wxThread(wxTHREAD_DETACHED)
@@ -304,21 +305,28 @@ wxThread::ExitCode PacketProcessThread::Entry()
                 // 程序已开启录制固定帧动作数据
                 if(m_fatherPanel->m_isRecord)
                 {
-                    // 将固定帧数据进行按序号保存
-                    wxString savedBinFileName;
-                    savedBinFileName.Printf(wxT("ActionDemo%i.bin"),m_fatherPanel->m_savedBinNum);
-                    wxFile savedBinDataFile(savedBinFileName, wxFile::write_append);
-                    // 使用wxFileOutputStream输出数据流 - 与创建出来的bin文件进行绑定
-                    wxFileOutputStream dataToBinFile(savedBinDataFile);
-                    dataToBinFile.Write(&(m_radarCube->GetFrame()[0]), m_radarParam->GetFrameBytes());
-
-                    // 后续处理
-                    --(m_fatherPanel->m_totalFrame);
-                    // if成立表明此次录制已经结束
-                    if(!(m_fatherPanel->m_totalFrame))
+                    if(!(m_fatherPanel->m_delayFrame))
                     {
-                        m_fatherPanel->m_isRecord = false;   // 录制结束，取消录制状态
-                        ++(m_fatherPanel->m_savedBinNum);    // 录制结束，下次录制时bin文件名中id+1
+                        // 将固定帧数据进行按序号保存
+                        wxString savedBinFileName;
+                        savedBinFileName.Printf(wxT("ActionDemo%i.bin"),m_fatherPanel->m_savedBinNum);
+                        wxFile savedBinDataFile(savedBinFileName, wxFile::write_append);
+                        // 使用wxFileOutputStream输出数据流 - 与创建出来的bin文件进行绑定
+                        wxFileOutputStream dataToBinFile(savedBinDataFile);
+                        dataToBinFile.Write(&(m_radarCube->GetFrame()[0]), m_radarParam->GetFrameBytes());
+
+                        // 后续处理
+                        --(m_fatherPanel->m_totalFrame);
+                        // if成立表明此次录制已经结束
+                        if(!(m_fatherPanel->m_totalFrame))
+                        {
+                            m_fatherPanel->m_isRecord = false;   // 录制结束，取消录制状态
+                            ++(m_fatherPanel->m_savedBinNum);    // 录制结束，下次录制时bin文件名中id+1
+                        }
+                    }
+                    else
+                    {
+                        --(m_fatherPanel->m_delayFrame);
                     }
                 }
 
@@ -515,6 +523,7 @@ void wxOnlinePagePanel::OnDetectActionClick(wxCommandEvent& event)
     // 初始化录制状态
     m_isRecord = true;
     m_totalFrame = 150;
+    m_delayFrame = 150;
 }
 
 void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)
@@ -1489,7 +1498,7 @@ void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
 
     m_father->m_mdPic->SetBitmap(*RdImage,0,0,128,150);
 
-    m_father->m_mdWin->UpdateAll();
+    m_father->m_mdWin->Update();
     m_father->m_mdWin->Fit();
 
 

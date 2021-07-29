@@ -149,6 +149,8 @@ public:
     bool m_isRecord;                   ///< 表明程序是否开始录制固定帧动作数据
     int m_totalFrame;                  ///< 程序录制固定帧帧数
     int m_savedBinNum;                 ///< 保存的bin文件的计数序号
+    // @todo 目前m_delayFrame仅为了测试，表明经过这些帧后才开始录制(方便我摆好位置)
+    int m_delayFrame;                  ///< 延时帧数
 
 private:
     // 窗口控件相关
