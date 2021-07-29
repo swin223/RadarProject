@@ -145,6 +145,11 @@ public:
     /// 用于给另一个线程处理的数据队列
     wxMessageQueue<UINT8 *> m_packetMsgQueue;
 
+    // 对录制的动作识别(固定帧)相关
+    bool m_isRecord;                   ///< 表明程序是否开始录制固定帧动作数据
+    int m_totalFrame;                  ///< 程序录制固定帧帧数
+    int m_savedBinNum;                 ///< 保存的bin文件的计数序号
+
 private:
     // 窗口控件相关
     wxTextCtrl *m_logOutPut;           ///< 输出log信息

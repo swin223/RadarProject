@@ -184,6 +184,11 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
 #ifndef NDEBUG
     std::cout << m_videoPath << std::endl;
 #endif
+
+    // 对录制的动作识别(固定帧)相关
+    m_isRecord = false;                                    // 表明程序尚未开始录制固定帧动作数据
+    m_totalFrame = 150;                                    // 程序录制固定帧帧数
+    m_savedBinNum = 1;                                     // bin文件的计数序号(从1开始)
 }
 
 PacketProcessThread::PacketProcessThread(wxOnlinePagePanel *parent) : wxThread(wxTHREAD_DETACHED)
@@ -295,6 +300,27 @@ wxThread::ExitCode PacketProcessThread::Entry()
                 // 使用wxFileOutputStream输出数据流 - 与创建出来的bin文件进行绑定
                 wxFileOutputStream dataToFile(saveDataFile);
                 dataToFile.Write(&(m_radarCube->GetFrame()[0]), m_radarParam->GetFrameBytes());
+
+                // 程序已开启录制固定帧动作数据
+                if(m_fatherPanel->m_isRecord)
+                {
+                    // 将固定帧数据进行按序号保存
+                    wxString savedBinFileName;
+                    savedBinFileName.Printf(wxT("ActionDemo%i.bin"),m_fatherPanel->m_savedBinNum);
+                    wxFile savedBinDataFile(savedBinFileName, wxFile::write_append);
+                    // 使用wxFileOutputStream输出数据流 - 与创建出来的bin文件进行绑定
+                    wxFileOutputStream dataToBinFile(savedBinDataFile);
+                    dataToBinFile.Write(&(m_radarCube->GetFrame()[0]), m_radarParam->GetFrameBytes());
+
+                    // 后续处理
+                    --(m_fatherPanel->m_totalFrame);
+                    // if成立表明此次录制已经结束
+                    if(!(m_fatherPanel->m_totalFrame))
+                    {
+                        m_fatherPanel->m_isRecord = false;   // 录制结束，取消录制状态
+                        ++(m_fatherPanel->m_savedBinNum);    // 录制结束，下次录制时bin文件名中id+1
+                    }
+                }
 
                 // 雷达数据处理
                 // 帧数据流存满 - 进行相应处理
@@ -479,10 +505,16 @@ void wxOnlinePagePanel::OnDisconnectUDPClick(wxCommandEvent& event)
 
 void wxOnlinePagePanel::OnDetectActionClick(wxCommandEvent& event)
 {
-    wxMessageBox(wxT("yes"));
+    // 如果m_isRecord为true表明此时正在录制，请勿重复按按钮
+    if(m_isRecord)
+    {
+        wxLogMessage(wxT("录制中...请等待此次录制结束..."));
+        return;
+    }
 
-
-
+    // 初始化录制状态
+    m_isRecord = true;
+    m_totalFrame = 150;
 }
 
 void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)
