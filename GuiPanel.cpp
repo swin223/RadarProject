@@ -1517,7 +1517,7 @@ void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
     arma::rowvec::iterator mItPrint = featureVec[1].begin();
     arma::rowvec::iterator mItEndPrint = featureVec[1].end();
     for (; mItPrint != mItEndPrint; mItPrint++)
-        outPrint << (*mItPrint);
+        outPrint << (*mItPrint) << " ";
     // 文件输出完毕
     outPrint.close();
 #endif
