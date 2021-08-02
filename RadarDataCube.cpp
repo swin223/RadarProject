@@ -51,7 +51,7 @@ void RadarDataCube::CreatRdm()
 
     // 由n通道合成RDM
     // todo channels 合成参数
-    int nChannel = 4;
+    int nChannel = 1;
     arma::mat radarRdmRealTotal(m_param.m_adcSample, m_param.m_nChirp, arma::fill::zeros);
     for(int i = 0;i < nChannel;++i){
         arma::cx_mat radarRdm(m_param.m_adcSample, m_param.m_nChirp,arma::fill::zeros);  // 暂存数据

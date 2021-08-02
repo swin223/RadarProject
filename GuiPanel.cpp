@@ -189,7 +189,7 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
     m_isRecord = false;                                    // 表明程序尚未开始录制固定帧动作数据
     m_totalFrame = 150;                                    // 程序录制固定帧帧数
     m_savedBinNum = 1;                                     // bin文件的计数序号(从1开始)
-    m_delayFrame = 150;
+    m_delayFrame = 0;
 }
 
 PacketProcessThread::PacketProcessThread(wxOnlinePagePanel *parent) : wxThread(wxTHREAD_DETACHED)
@@ -523,7 +523,7 @@ void wxOnlinePagePanel::OnDetectActionClick(wxCommandEvent& event)
     // 初始化录制状态
     m_isRecord = true;
     m_totalFrame = 150;
-    m_delayFrame = 150;
+    m_delayFrame = 0;
 }
 
 void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)
@@ -1511,6 +1511,17 @@ void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
     std::cout << "-------------------------" << std::endl;
 #endif
 
+#ifndef DEBUG
+    // 进行输出数据文件以进行和Matlab对比
+    std::ofstream outPrint("limbsPrint.txt",std::ios::out);
+    arma::rowvec::iterator mItPrint = featureVec[1].begin();
+    arma::rowvec::iterator mItEndPrint = featureVec[1].end();
+    for (; mItPrint != mItEndPrint; mItPrint++)
+        outPrint << (*mItPrint);
+    // 文件输出完毕
+    outPrint.close();
+#endif
+
     // 进行绘制 - 设置三个特征矢量的y坐标
     std::vector<double> vecCur1y, vecCur2y, vecCur3y;
     arma::rowvec::iterator mIt = featureVec[0].begin();
@@ -1552,11 +1563,19 @@ void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
     auto minMax3y = std::minmax_element(vecCur3y.begin(),vecCur3y.end());
 
     m_father->m_torsoWin->Update();
+    /*
     m_father->m_torsoWin->Fit(-15*timeRes,vecCur1x.size()*timeRes,
                     (*minMax1y.first)*1.5,(*minMax1y.second)*1.5);
+                    */
+    m_father->m_torsoWin->Fit(-15*timeRes,vecCur1x.size()*timeRes,
+                              -0.6,0.6);
     m_father->m_limbsWin->Update();
+    /*
     m_father->m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,
                     -(*minMax2y.second)*0.5,(*minMax2y.second)*1.5);
+                    */
+    m_father->m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,
+                              0.9,2.0);
     m_father->m_vmdWin->Update();
     m_father->m_vmdWin->Fit(-15,vecCur3x.size(),
                   (*minMax3y.first)*1.5,-(*minMax3y.first)*0.5);
