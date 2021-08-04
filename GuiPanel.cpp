@@ -187,7 +187,7 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
 
     // 对录制的动作识别(固定帧)相关
     m_isRecord = false;                                    // 表明程序尚未开始录制固定帧动作数据
-    m_totalFrame = 150;                                    // 程序录制固定帧帧数
+    m_totalFrame = 2;                                    // 程序录制固定帧帧数
     m_savedBinNum = 1;                                     // bin文件的计数序号(从1开始)
     m_delayFrame = 0;
 }
@@ -522,7 +522,7 @@ void wxOnlinePagePanel::OnDetectActionClick(wxCommandEvent& event)
 
     // 初始化录制状态
     m_isRecord = true;
-    m_totalFrame = 150;
+    m_totalFrame = 2;
     m_delayFrame = 0;
 }
 
