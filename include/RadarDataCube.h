@@ -53,6 +53,7 @@ public:
 
     /** 创建RDM矩阵
      * @details RDM - Range Doppler Map
+     * @note 这里没有将数据对数化
      */
     void CreatRdm();
 

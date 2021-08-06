@@ -51,7 +51,7 @@ void RadarDataCube::CreatRdm()
 
     // 由n通道合成RDM
     // todo channels 合成参数
-    int nChannel = 1;
+    int nChannel = 4;
     arma::mat radarRdmRealTotal(m_param.m_adcSample, m_param.m_nChirp, arma::fill::zeros);
     for(int i = 0;i < nChannel;++i){
         arma::cx_mat radarRdm(m_param.m_adcSample, m_param.m_nChirp,arma::fill::zeros);  // 暂存数据
@@ -97,11 +97,11 @@ void RadarDataCube::CreatRdm()
         m_radarRdmReal.col(dopplerBin0 + 1) = interpF + interPerDiff * 3;
     }
 
-    // 对数化元素
-    arma::mat::iterator it = m_radarRdmReal.begin();
-    arma::mat::iterator itEnd = m_radarRdmReal.end();
-    for(;it != itEnd;++it)
-        (*it) = 10 * log10(1.0 + (*it));
+    // 一个比较重要的记录
+    // 出自:Matlab处理得到的特征矢量的结果和软件得到的特征矢量的结果相差很大
+    // 解决:在排除了是Studio和软件采集的bin差异的情况下，对软件内的所有输出和Matlab进行比对
+    // 问题所在: 之前是先对Range Doppler Map进行20*log10对数化，再沿速度维投影;应该是先投影，再20*log10对数化
+    // 解决后的一个额外的惊喜: 现在所有微多普勒图像完全没有噪点，所有微多普勒图像超级清晰
 }
 
 void RadarDataCube::UpdateMicroMap()
@@ -110,6 +110,12 @@ void RadarDataCube::UpdateMicroMap()
     arma::rowvec rangeSum = arma::sum(m_radarRdmReal.rows(rowDiffDefault,
                                                         m_param.m_adcSample - rowDiffDefault));
     arma::vec rangeSumCol = rangeSum.as_col();
+
+    // 对数化元素(动态)
+    arma::vec::iterator it = rangeSumCol.begin();
+    arma::vec::iterator itEnd = rangeSumCol.end();
+    for(;it != itEnd;++it)
+        (*it) = 20 * log10(abs(*it));
 
     if(m_realTimeMapStart)
     {
@@ -137,6 +143,12 @@ void RadarDataCube::UpdateStaticMicroMap(long long frameCount)
                                                           m_param.m_adcSample - rowDiffDefault));
     arma::vec rangeSumCol = rangeSum.as_col();
 
+    // 对数化元素(静态)
+    arma::vec::iterator it = rangeSumCol.begin();
+    arma::vec::iterator itEnd = rangeSumCol.end();
+    for(;it != itEnd;++it)
+        (*it) = 20 * log10(abs(*it));
+
     if(m_realTimeMapStart)
     {
         m_realTimeMdMap = arma::mat(m_param.m_nChirp,frameCount);
@@ -156,6 +168,14 @@ cv::Mat& RadarDataCube::ConvertRdmToMap()
 {
     // realTimeMdMap是实时微多普勒矩阵，数据不应该改变
     auto tempRdmReal = m_radarRdmReal;
+
+    // m_radarRdmReal是还未进行对数化的
+    // 对数化元素(动态)
+    arma::mat::iterator it = tempRdmReal.begin();
+    arma::mat::iterator itEnd = tempRdmReal.end();
+    for(;it != itEnd;++it)
+        (*it) = 20 * log10(abs(*it));
+
     // 创建预处理矩阵
     cv::Mat preMap(m_param.m_adcSample, m_param.m_nChirp, CV_8UC1);
 
@@ -276,10 +296,10 @@ std::vector<arma::rowvec> RadarDataCube::ExtractFeature()
     auto microDoppler = m_realTimeMdMap;   // 遵循不改变原数据原则，生成临时变量
 
     // 预处理 - 高度标准化
-    // [1,100]标准处理，滤去[0,7]
+    // [1,100]标准处理，滤去[0,5]
     microDoppler = microDoppler - microDoppler.min();
     microDoppler = microDoppler / microDoppler.max() * 100;
-    double powerThreshold = 7.0;          // todo:一个需要人工定义的值，可以将其放在可视化界面上
+    double powerThreshold = 5.0;          // todo:一个需要人工定义的值，可以将其放在可视化界面上
     microDoppler = microDoppler - powerThreshold;
     // [0 > value]全部变1
     arma::mat::iterator mIt = microDoppler.begin();

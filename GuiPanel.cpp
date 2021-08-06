@@ -1511,7 +1511,7 @@ void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
     std::cout << "-------------------------" << std::endl;
 #endif
 
-#ifndef DEBUG
+#ifndef NDEBUG
     // 进行输出数据文件以进行和Matlab对比
     std::ofstream outPrint("limbsPrint.txt",std::ios::out);
     arma::rowvec::iterator mItPrint = featureVec[1].begin();
@@ -1568,14 +1568,14 @@ void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
                     (*minMax1y.first)*1.5,(*minMax1y.second)*1.5);
                     */
     m_father->m_torsoWin->Fit(-15*timeRes,vecCur1x.size()*timeRes,
-                              -0.6,0.6);
+                              -1.2,1.2);
     m_father->m_limbsWin->Update();
     /*
     m_father->m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,
                     -(*minMax2y.second)*0.5,(*minMax2y.second)*1.5);
                     */
     m_father->m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,
-                              0.9,2.0);
+                              0.9,1.6);
     m_father->m_vmdWin->Update();
     m_father->m_vmdWin->Fit(-15,vecCur3x.size(),
                   (*minMax3y.first)*1.5,-(*minMax3y.first)*0.5);
