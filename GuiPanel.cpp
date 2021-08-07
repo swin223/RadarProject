@@ -103,6 +103,8 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
     /* ---------------------------------------------- 控件设定 + 页面布局 ----------------------------------------------- */
     // 按钮
     m_logOutPut = new wxTextCtrl(this, wxID_ANY, wxT(""),wxPoint(-1, -1), wxSize(-1, -1), wxTE_MULTILINE);
+    m_console = new wxLogTextCtrl(m_logOutPut);
+    wxLog::SetActiveTarget(m_console);
     wxButton *btDca1000 = new wxButton(this, ID_ONLINE_DCA1000, wxT("RUN DCA1000"),wxDefaultPosition,wxSize(150,30));
     wxButton *btUdpConnect = new wxButton(this, ID_ONLINE_UDPCT, wxT("UDP CONNECT"),wxDefaultPosition,wxSize(150,30));
     wxButton *btAwr1642 = new wxButton(this, ID_ONLINE_AWR1642, wxT("RUN AWR1642"),wxDefaultPosition,wxSize(150,30));
@@ -187,9 +189,9 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
 
     // 对录制的动作识别(固定帧)相关
     m_isRecord = false;                                    // 表明程序尚未开始录制固定帧动作数据
-    m_totalFrame = 2;                                    // 程序录制固定帧帧数
+    m_totalFrame = 150;                                    // 程序录制固定帧帧数
     m_savedBinNum = 1;                                     // bin文件的计数序号(从1开始)
-    m_delayFrame = 0;
+    m_delayFrame = 100;
 }
 
 PacketProcessThread::PacketProcessThread(wxOnlinePagePanel *parent) : wxThread(wxTHREAD_DETACHED)
@@ -271,9 +273,12 @@ wxThread::ExitCode PacketProcessThread::Entry()
         }
 
         // 输出日志
+        // 因为不出意外不丢包 - 所以暂时关闭输出日志
+        /*
         wxString outMessage;
         outMessage.Printf(wxT(" 当前帧号 = %d ,  %d"), seqNum, m_udpPacketSeqFlag);
         wxLogMessage(outMessage);
+         */
 
         // 普通处理
         if(m_udpPacketSeqFlag)
@@ -307,6 +312,11 @@ wxThread::ExitCode PacketProcessThread::Entry()
                 {
                     if(!(m_fatherPanel->m_delayFrame))
                     {
+                        if(m_fatherPanel->m_totalFrame == 150)
+                        {
+                            wxLogMessage(wxT("开始进行数据采集"));
+                        }
+
                         // 将固定帧数据进行按序号保存
                         wxString savedBinFileName;
                         savedBinFileName.Printf(wxT("ActionDemo%i.bin"),m_fatherPanel->m_savedBinNum);
@@ -396,6 +406,165 @@ wxThread::ExitCode PacketProcessThread::Entry()
     return (wxThread::ExitCode)0;
 }
 
+PredictActionThread::PredictActionThread(wxOnlinePagePanel *parent,int binNum) : wxThread(wxTHREAD_DETACHED)
+{
+    // 父窗口成员
+    m_fatherPanel = parent;
+    m_binNum = binNum;
+    m_featureDim = 401;
+}
+
+void PredictActionThread::OnExit()
+{
+
+}
+
+wxThread::ExitCode PredictActionThread::Entry()
+{
+#ifndef DEBUG
+    wxLogMessage(wxT("进入线程"));
+#endif
+
+    // 雷达信号处理类相关变量初始设置
+    RadarParam *radarParam = new RadarParam;                          // RadarParam对象初始化
+    RadarDataCube *radarCube = new RadarDataCube(*radarParam);     // RadarDataCube对象初始化
+    int16_t *preBuf = new int16_t[radarParam->GetFrameBytes() / 2];   // 初始化buff
+    std::vector<INT16>::iterator insertPos;                           // 设置初始复制位置
+    insertPos = radarCube->GetFrame().begin();                        // 定义插入帧数据中的位置初始化
+
+    // 通过bin id指示获取对应的文件
+    wxString getBinFileName;
+    getBinFileName.Printf(wxT("ActionDemo%i.bin"),this->m_binNum);
+
+    // 先忙等一会，等录制结束
+#ifndef DEBUG
+    wxLogMessage(wxT("进入忙等前"));
+#endif
+    /*
+    for(;m_fatherPanel->m_isRecord;)
+    {
+
+    }
+     */
+    this->Sleep(20000);
+#ifndef DEBUG
+    wxLogMessage(wxT("进入忙等后"));
+#endif
+    std::ifstream ifs(getBinFileName.ToStdString(), std::ios::binary | std::ios::in);
+    if(!ifs.is_open())
+        return (wxThread::ExitCode) 0;
+    ifs.seekg(0, std::ios_base::end);
+    long long nFileLen = ifs.tellg();
+    long long totalFrame = nFileLen / radarParam->GetFrameBytes();
+    // 文件指针回到开头
+    ifs.clear();                 // 文件指针重定位前对流状态标志进行清除操作
+    ifs.seekg(0,std::ios::beg);  // 文件指针重定位
+
+    bool m_mdMapDrawFlag = true;
+    int frameCount = totalFrame;
+    // 执行读取的文件
+    while (frameCount--)
+    {
+        ifs.read((char *) preBuf, radarParam->GetFrameBytes());
+        std::copy_n(preBuf, radarParam->GetFrameBytes() / 2, insertPos);
+
+        // 雷达数据处理
+        // 帧数据流存满 - 进行相应处理
+        radarCube->CreatCube();
+        radarCube->CreatRdm();
+
+        // 微多普勒图也进行更新
+        if (m_mdMapDrawFlag)
+        {
+            radarCube->SetFlagForMap();
+            m_mdMapDrawFlag = false;
+        }
+
+        radarCube->UpdateStaticMicroMap(totalFrame);
+    }
+    // 所有处理结束后，会生成完整的微多普勒频谱，提取特征
+    std::vector<arma::rowvec> featureVec = radarCube->ExtractFeature();
+    // 创建特征矩阵用于存单样本的特征
+    arma::mat sampleFeature(1,m_featureDim,arma::fill::zeros);
+    sampleFeature.row(0).cols(0,m_featureDim - 1) =
+            join_rows(join_rows(featureVec[0],featureVec[1]),featureVec[2]);
+
+    // 标准化测试的bin提取的特征
+
+    // 得到测试集特征矩阵的每一行列的最大最小值
+    arma::rowvec featureMax = max(sampleFeature, 0);
+    arma::rowvec featureMin = min(sampleFeature, 0);
+    // 标准化最大最小值
+    int yMax = 1,yMin = -1;
+    // 读取训练集最大最小值数据
+    std::ifstream maxMinFs("MaxMinOut.txt", std::ios::in);
+    for (arma::uword i = 0; i < m_featureDim; i++)
+    {
+        maxMinFs >> featureMin(i);
+    }
+    for (arma::uword i = 0; i < m_featureDim; i++)
+    {
+        maxMinFs >> featureMax(i);
+    }
+    // 标准化
+    for (arma::uword i = 0; i < m_featureDim; i++)
+    {
+        sampleFeature.col(i) = (yMax - yMin) * (sampleFeature.col(i) - featureMin(i))
+                                  / (featureMax(i) - featureMin(i)) + yMin;
+    }
+    // 输出后，关闭文件描述符
+    maxMinFs.close();
+
+    wxLogMessage(wxT("测试的文件特征矩阵标准化完毕..."));
+
+    // 设置libsvm的输入数据格式
+
+    // 指定一个临时值用于给testIfs逐个读取数据
+    double tempVal = 0.0;
+    // 一个svm_node用于存一个Sample的一个维度的特征(最后一个用于标记结束)
+    svm_node* singleSample = new svm_node[m_featureDim + 1];
+    for(int j = 0; j < m_featureDim; ++j)
+    {
+        tempVal = sampleFeature.at(0,j);
+        singleSample[j].index = j + 1;      // index成员表示第N维度，从1开始
+        singleSample[j].value = tempVal;    // value成员表示第N维度的值
+    }
+    // svm_node向量的最后一个数据用于标记结束(index = -1)
+    singleSample[m_featureDim].index = -1;
+
+    // 搜索保存的svm模型并打开并进行预测
+
+    wxLogMessage(wxT(" ------------------------------------------ "));
+    std::string svmModelName = "SvmModel";
+    svm_model* svmModel = svm_load_model(svmModelName.c_str());
+    wxLogMessage(wxT(" -------- 已开始预测样本的类别 -------- "));
+    double predictTag = svm_predict(svmModel,singleSample);
+    wxLogMessage(wxT(" --------------- 预测完毕 ---------------- "));
+    switch(static_cast<int>(predictTag))
+    {
+        case 1 : wxLogMessage(wxT(" -------- 来回走路 -------- "));break;
+        case 2 : wxLogMessage(wxT(" -------- 坐下 -------- "));break;
+        case 3 : wxLogMessage(wxT(" -------- 站起 -------- "));break;
+        case 4 : wxLogMessage(wxT(" -------- 拾物 -------- "));break;
+        case 5 : wxLogMessage(wxT(" -------- 摔倒 -------- "));break;
+        case 6 : wxLogMessage(wxT(" -------- 扭身 -------- "));break;
+        case 7 : wxLogMessage(wxT(" -------- 打电话 -------- "));break;
+        case 8 : wxLogMessage(wxT(" -------- 跳跃 -------- "));break;
+        case 9 : wxLogMessage(wxT(" -------- 鞠躬 -------- "));break;
+    }
+    wxLogMessage(wxT(" ------------------------------------------ "));
+
+    // 后处理
+
+    delete radarParam;
+    delete radarCube;
+    delete[] preBuf;
+    delete[] singleSample;
+    ifs.close();
+
+    return (wxThread::ExitCode) 0;
+}
+
 void wxOnlinePagePanel::OnEnableDCA1000Click(wxCommandEvent& event)
 {
     // 输出消息重定位
@@ -480,11 +649,13 @@ void wxOnlinePagePanel::OnEnableAWR1642Click(wxCommandEvent& event)
 
     // log信息输出
     // 重定向以向log文件中输出 - 输出是否包连续
+    /*
     m_logFile = fopen("trace.log","wa");
     // 构造一个发送log信息的目标，将所有的log信息都发送到给定的FILE中
     m_logOutput = new wxLogStderr(m_logFile);
     // 将指定的日志目标设置为活动目标
     wxLog::SetActiveTarget(m_logOutput);
+     */
 
     // 用于处理Packet的子线程启动
     // bin回放开始 - 线程启动
@@ -520,10 +691,24 @@ void wxOnlinePagePanel::OnDetectActionClick(wxCommandEvent& event)
         return;
     }
 
+    // 在开启录制前先获取当前要保存的Bin文件的id
+    int savedBinNum = m_savedBinNum;
+
     // 初始化录制状态
     m_isRecord = true;
-    m_totalFrame = 2;
-    m_delayFrame = 0;
+    m_totalFrame = 150;
+    m_delayFrame = 100;
+
+    // 开启线程并进行预测
+    PredictActionThread* predictActionThread = new PredictActionThread(this,savedBinNum);
+    if ( predictActionThread->Create() != wxTHREAD_NO_ERROR )
+    {
+        wxLogMessage(wxT("Can't open thread"));
+        delete predictActionThread;
+        return;
+    }
+    predictActionThread->Run();
+    wxLogMessage(wxT("开始读取文件并预测"));
 }
 
 void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)

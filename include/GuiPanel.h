@@ -154,12 +154,13 @@ public:
 
 private:
     // 窗口控件相关
-    wxTextCtrl *m_logOutPut;           ///< 输出log信息
-    wxImagePanel *m_rdPicPanel;        ///< 存放Range-Doppler图
-    wxImagePanel *m_mdPicPanel;        ///< 存放Micro-Doppler图
-    wxImagePanel *m_cameraPicPanel;    ///< 存放摄像头拍摄图
-    FILE *m_logFile;                   ///< log信息输出文件(创建文件以输出) - 用于调试查看是否丢帧
-    wxLogStderr *m_logOutput;          ///< log信息输出
+    wxTextCtrl* m_logOutPut;           ///< 输出log信息
+    wxImagePanel* m_rdPicPanel;        ///< 存放Range-Doppler图
+    wxImagePanel* m_mdPicPanel;        ///< 存放Micro-Doppler图
+    wxImagePanel* m_cameraPicPanel;    ///< 存放摄像头拍摄图
+    FILE* m_logFile;                   ///< log信息输出文件(创建文件以输出) - 用于调试查看是否丢帧
+    wxLogStderr* m_logOutput;          ///< log信息输出
+    wxLogTextCtrl* m_console;          ///< 窗口信息输出
 
     // 参数配置相关
     wxFileConfig* m_configIni;         ///< 用于从ini文件中读取相应配置
@@ -213,6 +214,29 @@ private:
 
     // 存摄像头捕获的图片帧
     cv::Mat *m_singleFramePic;         ///< 摄像头单帧画面
+};
+
+/** 用于预测在实时采集过程中截获的bin数据包所示的动作的线程类 */
+class PredictActionThread : public wxThread {
+public:
+    /** 含参构造函数
+     * @param parent 父窗口指针
+     */
+    PredictActionThread(wxOnlinePagePanel *parent,int binNum);
+
+    // 线程启动入口与退出
+    /** 线程入口函数 */
+    virtual void *Entry();
+
+    /** 退出函数 */
+    virtual void OnExit();
+
+private:
+    // 父窗口成员
+    wxOnlinePagePanel *m_fatherPanel;  ///< 父窗口成员指针
+    int m_binNum;                      ///< 需要进程预测bin的id
+    // todo - 这个参数需要调整
+    int m_featureDim;                  ///< 特征向量的维数
 };
 
 /* ------------------------------------------------------- Page 2 -----------------------------------------------------
