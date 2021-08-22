@@ -272,6 +272,35 @@ wxThread::ExitCode PacketProcessThread::Entry()
             m_prePacketSeq = seqNum;
         }
 
+        // 寻找包头
+
+        /*
+        // 定义一帧的字节大小
+        unsigned long long frameBytes = 256 * 128 * 4 * 4;
+        // 从UDP包的后六位中读取UDP包之前的积累字节数
+        unsigned long long bytesTotal = udpPacketPtr[4] + (udpPacketPtr[5] << 8) + (udpPacketPtr[6] << 16)
+                + (udpPacketPtr[7] << 24) + (udpPacketPtr[8] << 32) + (udpPacketPtr[9] << 40);
+        // 计算Frame的id(从0开始)
+        unsigned long long frameId = bytesTotal / frameBytes;
+        // remainBytes是离下一个Frame开头还有多少字节
+        unsigned long long remainBytes = (frameId + 1) * frameBytes - bytesTotal;
+        if(remainBytes == 0)  // 刚好是帧开头
+        {
+            m_udpPacketSeqFlag = true; // m_udpPacketSeqFlag表示可以开始采集数据
+            // 接下去可以直接保存
+        }
+        else if (remainBytes < 1456)   // 帧开头在该UDP包中
+        {
+            int errorOffset = remainBytes;
+            m_udpPacketSeqFlag = true; // m_udpPacketSeqFlag表示可以开始采集数据
+            // 接下去保存的数据在UDP包中的偏移为errorOffset
+        }
+        else if (remainBytes > 1456)   // 帧开头不在该UDP包中
+        {
+            ; // 此时m_udpPacketSeqFlag默认为false，就会忽略此次UDP包
+        }
+         */
+
         // 输出日志
         // 因为不出意外不丢包 - 所以暂时关闭输出日志
         /*
@@ -600,13 +629,13 @@ void wxOnlinePagePanel::OnConnectUDPClick(wxCommandEvent& event)
 {
     // 定义一个IPV4地址类对象 - 绑定本地
     // DCA1000只将数据传到指定 IP + 端口
-    wxIPV4address localAddr;
+    localAddr = new wxIPV4address;
     wxString hostname("192.168.33.30");
-    localAddr.Hostname(hostname);
-    localAddr.Service(4098);
+    localAddr->Hostname(hostname);
+    localAddr->Service(4098);
 
     // 创建一个本地UDP-Socket，并且绑定上述建立的IPV4地址
-    m_mySocket = new wxDatagramSocket(localAddr);
+    m_mySocket = new wxDatagramSocket(*localAddr);
 
     // 分配1024*1024字节的缓存给udp的socket
     // SetOption第一个参数level - SOL_SOCKET 或者 IPPROTO_TCP
@@ -726,7 +755,7 @@ void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)
         UINT8 *singleUdpBufPtr = new UINT8[m_udpParam->m_bufSize];
 
         // 从socket缓存中读取1466字节udp数据(一个包的大小)到buf
-        m_mySocket->Read(singleUdpBufPtr, m_udpParam->m_bufSize);
+        m_mySocket->RecvFrom(*localAddr,singleUdpBufPtr,m_udpParam->m_bufSize);
 
         m_packetMsgQueue.Post(singleUdpBufPtr);
 
@@ -1760,7 +1789,7 @@ void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
                     -(*minMax2y.second)*0.5,(*minMax2y.second)*1.5);
                     */
     m_father->m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,
-                              0.9,1.6);
+                              0.3,2.5);
     m_father->m_vmdWin->Update();
     m_father->m_vmdWin->Fit(-15,vecCur3x.size(),
                   (*minMax3y.first)*1.5,-(*minMax3y.first)*0.5);

@@ -166,13 +166,14 @@ private:
     wxFileConfig* m_configIni;         ///< 用于从ini文件中读取相应配置
 
     // socket及udp相关
+    wxIPV4address* localAddr;          ///< socket的address
     wxDatagramSocket* m_mySocket;      ///< 用于接收数据的socket(UDP)
 
     // 雷达信号处理类
     UdpPacketParam* m_udpParam;        ///< UDP参数类
 
     // 子线程相关
-    PacketProcessThread *m_packetProcessThread; ///< 子线程对象-处理UDP Packet
+    PacketProcessThread* m_packetProcessThread; ///< 子线程对象-处理UDP Packet
 
     // 声明私有事件表
     DECLARE_EVENT_TABLE()
