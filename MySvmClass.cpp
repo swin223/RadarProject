@@ -181,6 +181,10 @@ void MySvm::PredictSvm()
         double trueTag = m_testTagDeque.front();
         m_testTagDeque.pop_front();
 
+        wxString outMessage;
+        outMessage.Printf(wxT("---正确: %.0lf---,预测: %.0lf"),trueTag,predictTag);
+        wxLogMessage(outMessage);
+
         // double有精度问题，精确比较采用int
         if(static_cast<int>(predictTag) == static_cast<int>(trueTag)) ++trueNum;
     }
