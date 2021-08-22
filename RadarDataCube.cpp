@@ -50,7 +50,7 @@ void RadarDataCube::CreatRdm()
             m_radarCube.slice(i).col(j) = m_radarCube.slice(i).col(j) % colHanning;
 
     // 由n通道合成RDM
-    // todo channels 合成参数
+    // @todo channels 合成参数
     int nChannel = 4;
     arma::mat radarRdmRealTotal(m_param.m_adcSample, m_param.m_nChirp, arma::fill::zeros);
     for(int i = 0;i < nChannel;++i){
@@ -299,7 +299,7 @@ std::vector<arma::rowvec> RadarDataCube::ExtractFeature()
     // [1,100]标准处理，滤去[0,5]
     microDoppler = microDoppler - microDoppler.min();
     microDoppler = microDoppler / microDoppler.max() * 100;
-    double powerThreshold = 5.0;          // todo:一个需要人工定义的值，可以将其放在可视化界面上
+    double powerThreshold = 5.0;          // @todo:一个需要人工定义的值，可以将其放在可视化界面上
     microDoppler = microDoppler - powerThreshold;
     // [0 > value]全部变1
     arma::mat::iterator mIt = microDoppler.begin();
@@ -311,7 +311,7 @@ std::vector<arma::rowvec> RadarDataCube::ExtractFeature()
 
     // 缩放范围 - 使微多普勒特征更加明显
     // 缩放后微多普勒矩阵变小
-    // todo - 一个需要人工定义的值，可以将其放在可视化界面上
+    // @todo - 一个需要人工定义的值，可以将其放在可视化界面上
     int scaleRadius = 50;                 // 缩放半径
     arma::uword scaleMin = m_param.m_nChirp / 2 - scaleRadius - 1;
     arma::uword scaleMax = m_param.m_nChirp / 2 + scaleRadius - 1;

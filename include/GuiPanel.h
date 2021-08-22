@@ -236,7 +236,7 @@ private:
     // 父窗口成员
     wxOnlinePagePanel *m_fatherPanel;  ///< 父窗口成员指针
     int m_binNum;                      ///< 需要进程预测bin的id
-    // todo - 这个参数需要调整
+    // @todo - 这个参数需要调整
     int m_featureDim;                  ///< 特征向量的维数
 };
 
@@ -591,6 +591,6 @@ private:
     std::vector<int> m_tagArray;             ///< 对应文件夹下的全文件对应的分类类别
 };
 
-// todo - 一些new出来的要去清理
+// @todo - 一些new出来的要去清理
 
 #endif //GUIPANEL_H

@@ -871,7 +871,7 @@ wxThread::ExitCode BinReplayThread::Entry()
     cv::Mat singleFrameInBin;
 
     // 离线数据 - 雷达信号处理类相关变量初始设置
-    // todo - 可以设置为智能指针
+    // @todo - 可以设置为智能指针
     RadarParam *radarParam = new RadarParam;                            // RadarParam对象初始化
     RadarDataCube *radarCube = new RadarDataCube(*radarParam);          // RadarDataCube对象初始化
     int16_t *preBuf = new int16_t[radarParam->GetFrameBytes() / 2];     // 初始化buff
@@ -1789,7 +1789,7 @@ void OfflineFunction::SingleBinProcess(std::string binFileNameStr)
                     -(*minMax2y.second)*0.5,(*minMax2y.second)*1.5);
                     */
     m_father->m_limbsWin->Fit(-15*timeRes,vecCur2x.size()*timeRes,
-                              0.3,2.5);
+                              0.9,1.6);
     m_father->m_vmdWin->Update();
     m_father->m_vmdWin->Fit(-15,vecCur3x.size(),
                   (*minMax3y.first)*1.5,-(*minMax3y.first)*0.5);
