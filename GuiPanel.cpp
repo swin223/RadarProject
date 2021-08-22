@@ -437,10 +437,15 @@ wxThread::ExitCode PacketProcessThread::Entry()
 
 PredictActionThread::PredictActionThread(wxOnlinePagePanel *parent,int binNum) : wxThread(wxTHREAD_DETACHED)
 {
+    // 读取ini数据
+    parent->m_configIni->SetPath(_T("/OnlinePage"));
+
+    // 实时界面中用于预测的参数设置
+    if (parent->m_configIni->Read(_T("Predict/featureDim"), &m_featureDim));
+
     // 父窗口成员
     m_fatherPanel = parent;
     m_binNum = binNum;
-    m_featureDim = 401;
 }
 
 void PredictActionThread::OnExit()

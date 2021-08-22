@@ -152,6 +152,9 @@ public:
     // @todo 目前m_delayFrame仅为了测试，表明经过这些帧后才开始录制(方便我摆好位置)
     int m_delayFrame;                  ///< 延时帧数
 
+    // 参数配置相关
+    wxFileConfig* m_configIni;         ///< 用于从ini文件中读取相应配置
+
 private:
     // 窗口控件相关
     wxTextCtrl* m_logOutPut;           ///< 输出log信息
@@ -161,9 +164,6 @@ private:
     FILE* m_logFile;                   ///< log信息输出文件(创建文件以输出) - 用于调试查看是否丢帧
     wxLogStderr* m_logOutput;          ///< log信息输出
     wxLogTextCtrl* m_console;          ///< 窗口信息输出
-
-    // 参数配置相关
-    wxFileConfig* m_configIni;         ///< 用于从ini文件中读取相应配置
 
     // socket及udp相关
     wxIPV4address* localAddr;          ///< socket的address
@@ -236,7 +236,6 @@ private:
     // 父窗口成员
     wxOnlinePagePanel *m_fatherPanel;  ///< 父窗口成员指针
     int m_binNum;                      ///< 需要进程预测bin的id
-    // @todo - 这个参数需要调整
     int m_featureDim;                  ///< 特征向量的维数
 };
 
