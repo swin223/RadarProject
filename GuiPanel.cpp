@@ -278,12 +278,8 @@ wxThread::ExitCode PacketProcessThread::Entry()
         // 定义一帧的字节大小
         unsigned long long frameBytes = 256 * 128 * 4 * 4;
         // 从UDP包的后六位中读取UDP包之前的积累字节数
-        unsigned long long bytesTotal = static_cast<unsigned long long>(udpPacketPtr[4])
-                + static_cast<unsigned long long>(udpPacketPtr[5] << 8)
-                + static_cast<unsigned long long>(udpPacketPtr[6] << 16)
-                + static_cast<unsigned long long>(udpPacketPtr[7] << 24)
-                + static_cast<unsigned long long>(udpPacketPtr[8] << 32)
-                + static_cast<unsigned long long>(udpPacketPtr[8] << 40);
+        unsigned long long bytesTotal = udpPacketPtr[4] + (udpPacketPtr[5] << 8) + (udpPacketPtr[6] << 16)
+                + (udpPacketPtr[7] << 24) + (udpPacketPtr[8] << 32) + (udpPacketPtr[9] << 40);
         // 计算Frame的id(从0开始)
         unsigned long long frameId = bytesTotal / frameBytes;
         // remainBytes是离下一个Frame开头还有多少字节
