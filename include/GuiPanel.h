@@ -125,11 +125,6 @@ public:
     */
     void OnDetectActionClick(wxCommandEvent& event);
 
-    /** Socket触发函数
-     * @param 触发事件
-     */
-    void OnSocketEvent(wxSocketEvent& event);
-
     /** 子线程Packet处理后绘图线程函数
      * @param 触发事件
      */
@@ -141,10 +136,6 @@ public:
     std::string m_videoPath;           ///< 视频保存位置
     cv::VideoWriter *m_outputVideo;    ///< 保存输出的video
 
-    // 使用wxMessageQueue用于在子线程间传递数据
-    /// 用于给另一个线程处理的数据队列
-    wxMessageQueue<UINT8 *> m_packetMsgQueue;
-
     // 对录制的动作识别(固定帧)相关
     bool m_isRecord;                   ///< 表明程序是否开始录制固定帧动作数据
     int m_totalFrame;                  ///< 程序录制固定帧帧数
@@ -154,6 +145,10 @@ public:
 
     // 参数配置相关
     wxFileConfig* m_configIni;         ///< 用于从ini文件中读取相应配置
+
+    // socket及udp相关
+    wxIPV4address* localAddr;          ///< socket的address
+    wxDatagramSocket* m_mySocket;      ///< 用于接收数据的socket(UDP)
 
 private:
     // 窗口控件相关
@@ -165,10 +160,6 @@ private:
     wxLogStderr* m_logOutput;          ///< log信息输出
     wxLogTextCtrl* m_console;          ///< 窗口信息输出
 
-    // socket及udp相关
-    wxIPV4address* localAddr;          ///< socket的address
-    wxDatagramSocket* m_mySocket;      ///< 用于接收数据的socket(UDP)
-
     // 雷达信号处理类
     UdpPacketParam* m_udpParam;        ///< UDP参数类
 
@@ -176,17 +167,22 @@ private:
     PacketProcessThread* m_packetProcessThread; ///< 子线程对象-处理UDP Packet
 
     // 声明私有事件表
-    DECLARE_EVENT_TABLE()
+    // DECLARE_EVENT_TABLE()
 };
 
 /** 处理的就是源源不断的UDP数据包的线程类 */
-class PacketProcessThread : public wxThread
+class PacketProcessThread : public wxEvtHandler,public wxThread
 {
 public:
     /** 含参构造函数
      * @param parent 父窗口指针
      */
     PacketProcessThread(wxOnlinePagePanel *parent);
+
+    /** Socket触发函数
+    * @param 触发事件
+    */
+    void OnSocketEvent(wxSocketEvent& event);
 
     // 线程启动入口与退出
     /** 线程入口函数 */
@@ -215,6 +211,13 @@ private:
 
     // 存摄像头捕获的图片帧
     cv::Mat *m_singleFramePic;         ///< 摄像头单帧画面
+
+    // 使用wxMessageQueue用于在子线程间传递数据
+    /// 用于给另一个线程处理的数据队列
+    wxMessageQueue<UINT8 *> m_packetMsgQueue;
+
+    // 声明私有事件表
+    DECLARE_EVENT_TABLE()
 };
 
 /** 用于预测在实时采集过程中截获的bin数据包所示的动作的线程类 */

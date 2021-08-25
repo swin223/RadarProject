@@ -92,9 +92,9 @@ void MyFrame::OnAbout(wxCommandEvent& event)
 /* ----------------------------------------------------- Page 1 ------------------------------------------------------
  ------------------------------------------------ wxOnlinePagePanel类 ------------------------------------------------*/
 
-// wxOnlinePagePanel类私有事件声明表
-BEGIN_EVENT_TABLE(wxOnlinePagePanel,wxPanel)
-    EVT_SOCKET(ID_ONLINE_SOCKET, wxOnlinePagePanel::OnSocketEvent)
+// PacketProcessThread类私有事件声明表
+BEGIN_EVENT_TABLE(PacketProcessThread,wxEvtHandler)
+    EVT_SOCKET(ID_ONLINE_SOCKET, PacketProcessThread::OnSocketEvent)
 END_EVENT_TABLE()
 
 wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
@@ -230,7 +230,7 @@ wxThread::ExitCode PacketProcessThread::Entry()
         UINT8* udpPacketPtr = nullptr;
         // 这里看了下Receive和ReceiveTimeOut的区别
         // Receive是阻塞的，一直等到队列中有可用数据，ReceiveTimeOut第一个参数设置为0后可以无阻塞调用
-        wxMessageQueueError ret = m_fatherPanel->m_packetMsgQueue.ReceiveTimeout(0,udpPacketPtr);
+        wxMessageQueueError ret = m_packetMsgQueue.ReceiveTimeout(0,udpPacketPtr);
 
         // 如果是超时事件，就跳过后续代码，继续等待
         if(ret == wxMSGQUEUE_TIMEOUT)
@@ -632,6 +632,17 @@ void wxOnlinePagePanel::OnEnableDCA1000Click(wxCommandEvent& event)
     // wxExecute第三个参数callback - 指向wxProcess的可选指针
     // wxExecute第四个参数env - 指向子进程的其他参数的可选指针，例如其初始工作目录和环境变量
     wxExecute(filePath, wxEXEC_ASYNC | wxEXEC_SHOW_CONSOLE, proc, &env);
+
+    // 创建UDP包处理的子线程
+    m_packetProcessThread = new PacketProcessThread(this);
+    if ( m_packetProcessThread->Create() != wxTHREAD_NO_ERROR )
+    {
+        wxLogMessage(wxT("Can't open thread"));
+        delete m_packetProcessThread;
+        return;
+    }
+    m_packetProcessThread->Run();
+    wxLogMessage(wxT("Run - Bin File Data Replay!"));
 }
 
 void wxOnlinePagePanel::OnConnectUDPClick(wxCommandEvent& event)
@@ -656,7 +667,7 @@ void wxOnlinePagePanel::OnConnectUDPClick(wxCommandEvent& event)
 
     // 设置UDP Socket
     // 将事件处理器和事件标志符SOCKET_ID绑定
-    m_mySocket->SetEventHandler(*this, ID_ONLINE_SOCKET);
+    m_mySocket->SetEventHandler(*m_packetProcessThread, ID_ONLINE_SOCKET);
     // 定义的这个UDP socket只是用来接收的
     m_mySocket->SetNotify(wxSOCKET_INPUT_FLAG);
     // 监听wxSOCKET_INPUT_FLAG事件
@@ -699,16 +710,6 @@ void wxOnlinePagePanel::OnEnableAWR1642Click(wxCommandEvent& event)
     // bin回放开始 - 线程启动
     // 绑定事件
     Connect(ID_ONLINE_PROCESS, MY_PLOT_THREAD, wxMyPlotEventHandler(wxOnlinePagePanel::OnReceivePacketProcessThreadEvent));
-
-    m_packetProcessThread = new PacketProcessThread(this);
-    if ( m_packetProcessThread->Create() != wxTHREAD_NO_ERROR )
-    {
-        wxLogMessage(wxT("Can't open thread"));
-        delete m_packetProcessThread;
-        return;
-    }
-    m_packetProcessThread->Run();
-    wxLogMessage(wxT("Run - Bin File Data Replay!"));
 }
 
 void wxOnlinePagePanel::OnDisconnectUDPClick(wxCommandEvent& event)
@@ -749,7 +750,7 @@ void wxOnlinePagePanel::OnDetectActionClick(wxCommandEvent& event)
     wxLogMessage(wxT("开始读取文件并预测"));
 }
 
-void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)
+void PacketProcessThread::OnSocketEvent(wxSocketEvent& event)
 {
     // 事件类型触发
     switch (event.GetSocketEvent())
@@ -758,19 +759,25 @@ void wxOnlinePagePanel::OnSocketEvent(wxSocketEvent& event)
     {
         // wxSOCKET_INPUT_FLAG标志会在数据到来时触发，会引起中断
         // 我们SetNotify wxSOCKET_LOST_FLAG 用以失去所有flag的bit位信息表示事件不触发
-        m_mySocket->SetNotify(wxSOCKET_LOST_FLAG);
+        m_fatherPanel->m_mySocket->SetNotify(wxSOCKET_LOST_FLAG);
+
+        // 定义一个用于接收的buf缓存
+        UINT8 recvBuf[8*1024];
+        // 从socket缓存中读取字节数据到buf
+        int nSize = m_fatherPanel->m_mySocket->RecvFrom(*(m_fatherPanel->localAddr),recvBuf,sizeof(recvBuf)).LastCount();
 
         // 一个UDP包的大小为1466，头部有验证信息，且要丢弃前10帧
-        UINT8 *singleUdpBufPtr = new UINT8[m_udpParam->m_bufSize];
-
-        // 从socket缓存中读取1466字节udp数据(一个包的大小)到buf
-        m_mySocket->RecvFrom(*localAddr,singleUdpBufPtr,m_udpParam->m_bufSize);
+        UINT8 *singleUdpBufPtr = new UINT8[nSize];
+        memcpy(singleUdpBufPtr,recvBuf,nSize);
+#ifndef NDEBUG
+        std::cout << nSize << std::endl;
+#endif
 
         m_packetMsgQueue.Post(singleUdpBufPtr);
 
         // 上面wxSOCKET_LOST_FLAG 用以失去所有flag的bit位信息表示事件不触发
         // 现在要重新SetNotify wxSOCKET_INPUT_FLAG表示现在又要对socket数据缓存区的数据进行处理
-        m_mySocket->SetNotify(wxSOCKET_INPUT_FLAG);
+        m_fatherPanel->m_mySocket->SetNotify(wxSOCKET_INPUT_FLAG);
         break;
     }
     default:
