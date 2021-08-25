@@ -171,13 +171,13 @@ private:
 };
 
 /** 处理的就是源源不断的UDP数据包的线程类 */
-class PacketProcessThread : public wxEvtHandler,public wxThread
+class PacketProcessThread : public wxEvtHandler, public wxThread
 {
 public:
     /** 含参构造函数
      * @param parent 父窗口指针
      */
-    PacketProcessThread(wxOnlinePagePanel *parent);
+    PacketProcessThread(wxOnlinePagePanel* parent);
 
     /** Socket触发函数
     * @param 触发事件
@@ -186,14 +186,14 @@ public:
 
     // 线程启动入口与退出
     /** 线程入口函数 */
-    virtual void *Entry();
+    virtual void* Entry();
 
     /** 退出函数 */
     virtual void OnExit();
 
 private:
     // 父窗口成员
-    wxOnlinePagePanel *m_fatherPanel;  ///< 父窗口成员指针
+    wxOnlinePagePanel* m_fatherPanel;  ///< 父窗口成员指针
 
     // socket及udp相关
     bool m_udpPacketSeqFlag;           ///< UDP包序列是否连续标志符
@@ -210,7 +210,7 @@ private:
     bool m_FirstFixFlag;               ///< 首次修正Flag
 
     // 存摄像头捕获的图片帧
-    cv::Mat *m_singleFramePic;         ///< 摄像头单帧画面
+    cv::Mat* m_singleFramePic;         ///< 摄像头单帧画面
 
     // 使用wxMessageQueue用于在子线程间传递数据
     /// 用于给另一个线程处理的数据队列
@@ -256,7 +256,7 @@ public:
     /** 含参构造函数
      * @param parent 父窗口指针
      */
-    wxBinReplayPagePanel(wxPanel *parent);
+    wxBinReplayPagePanel(wxPanel* parent);
 
     // 按钮功能函数
     /** bin回放开始函数
@@ -291,11 +291,11 @@ public:
 
 private:
     // 窗口控件相关
-    wxTextCtrl *m_logOutPut;       ///< 输出log信息框
-    wxLogTextCtrl *m_console;      ///< 输出log信息
-    wxImagePanel *m_rdPicPanel;    ///< 存放Range-Doppler图
-    wxImagePanel *m_mdPicPanel;    ///< 存放Micro-Doppler图
-    wxImagePanel *m_cameraPicPanel;///< 存放摄像头拍摄图
+    wxTextCtrl* m_logOutPut;       ///< 输出log信息框
+    wxLogTextCtrl* m_console;      ///< 输出log信息
+    wxImagePanel* m_rdPicPanel;    ///< 存放Range-Doppler图
+    wxImagePanel* m_mdPicPanel;    ///< 存放Micro-Doppler图
+    wxImagePanel* m_cameraPicPanel;///< 存放摄像头拍摄图
 
     // 子线程相关
     BinReplayThread *m_binReplayThread;   ///< 子线程对象-用于重播文件
@@ -315,7 +315,7 @@ public:
     {}
 
     /** Clone函数 */
-    virtual wxEvent *Clone() const { return new MyPlotEvent(*this); }
+    virtual wxEvent* Clone() const { return new MyPlotEvent(*this); }
 
     /** 用于存三个wxImage矩阵
      * @param RdMatrix 用于存Range-doppler Image的wxImage指针
@@ -414,12 +414,8 @@ public:
 public:
     wxBinReplayPagePanel* m_fatherPanel;           ///< 父亲Panel指针
 
-    // qu : 下面这个变量的定义，md什么意思？OL什么意思，请在注释里面对应说清楚，或者把变量名字修改完整
-    // note : 这里原先是m_mdMapDrawFlagOL，现在是m_mdMapDrawFlag
-    // 之前由于所有参数写在一起，所以OL是offline的意思，为了区分Online Page的m_mdMapDrawFlag标志
-    // 但是现在位于不同的类中，不需要OL来区分;md表示Micro doppler的意思
     // 这个flag用于表示是否开始绘制微多普勒图？因为要用前100帧来自适应图像颜色，其为true后，往后接收100帧用于自适应。
-    bool m_mdMapDrawFlag;                         ///< 表示开始绘制标志位
+    bool m_mdMapDrawFlag;                         ///< Micro doppler map draw 表示开始绘制标志位
 };
 
 /* ------------------------------------------------------- Page 3 -----------------------------------------------------
@@ -584,11 +580,11 @@ private:
      * @param sampleFeatureMat 训练集/测试集特征值矩阵
      * @param outputFileName 输出的文件名
      */
-    void PrintFeatureData(arma::mat& sampleFeatureMat,const std::string& outputFileName);
+    void PrintFeatureData(arma::mat& sampleFeatureMat, const std::string& outputFileName);
 
 private:
     DividePara m_dividePara;                 ///< 数据集划分参数
-    wxOfflinePagePanel *m_father;            ///< 父窗口指针
+    wxOfflinePagePanel* m_father;            ///< 父窗口指针
     wxArrayString m_filesArray;              ///< 对应文件夹下的全文件名数组
     std::vector<int> m_tagArray;             ///< 对应文件夹下的全文件对应的分类类别
 };

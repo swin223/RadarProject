@@ -93,7 +93,7 @@ void MyFrame::OnAbout(wxCommandEvent& event)
  ------------------------------------------------ wxOnlinePagePanel类 ------------------------------------------------*/
 
 // PacketProcessThread类私有事件声明表
-BEGIN_EVENT_TABLE(PacketProcessThread,wxEvtHandler)
+BEGIN_EVENT_TABLE(PacketProcessThread, wxEvtHandler)
     EVT_SOCKET(ID_ONLINE_SOCKET, PacketProcessThread::OnSocketEvent)
 END_EVENT_TABLE()
 
@@ -194,7 +194,7 @@ wxOnlinePagePanel::wxOnlinePagePanel(wxPanel *parent)
     m_delayFrame = 100;
 }
 
-PacketProcessThread::PacketProcessThread(wxOnlinePagePanel *parent) : wxThread(wxTHREAD_DETACHED)
+PacketProcessThread::PacketProcessThread(wxOnlinePagePanel* parent) : wxThread(wxTHREAD_DETACHED)
 {
     // 父窗口成员
     m_fatherPanel = parent;
@@ -209,11 +209,13 @@ PacketProcessThread::PacketProcessThread(wxOnlinePagePanel *parent) : wxThread(w
     m_insertPos = m_radarCube->GetFrame().begin();        // 定义插入帧数据中的位置初始化
     m_mdMapDrawFlag = true;                               // 表示开始绘制微多普勒图
     int needLostFrame = 5;                                // 需要丢弃的帧数 - 用于初始化参数修正类
-    m_modifyFrame = new ModifyFrame(*m_radarParam,needLostFrame,*m_udpParam);
+    m_modifyFrame = new ModifyFrame(*m_radarParam, needLostFrame, *m_udpParam);
     m_FirstFixFlag = true;                                // 首次修正Flag
 
     // 存摄像头捕获的图片帧初始化
     m_singleFramePic = new cv::Mat;                       // 摄像头捕捉的单帧初始化
+
+    //@todo 上面一大堆new，最后什么时候去析构掉？
 }
 
 void PacketProcessThread::OnExit()
@@ -764,11 +766,11 @@ void PacketProcessThread::OnSocketEvent(wxSocketEvent& event)
         // 定义一个用于接收的buf缓存
         UINT8 recvBuf[8*1024];
         // 从socket缓存中读取字节数据到buf
-        int nSize = m_fatherPanel->m_mySocket->RecvFrom(*(m_fatherPanel->localAddr),recvBuf,sizeof(recvBuf)).LastCount();
+        int nSize = m_fatherPanel->m_mySocket->RecvFrom(*(m_fatherPanel->localAddr), recvBuf, sizeof(recvBuf)).LastCount();
 
         // 一个UDP包的大小为1466，头部有验证信息，且要丢弃前10帧
-        UINT8 *singleUdpBufPtr = new UINT8[nSize];
-        memcpy(singleUdpBufPtr,recvBuf,nSize);
+        UINT8* singleUdpBufPtr = new UINT8[nSize];
+        memcpy(singleUdpBufPtr, recvBuf, nSize);
 #ifndef NDEBUG
         std::cout << nSize << std::endl;
 #endif
